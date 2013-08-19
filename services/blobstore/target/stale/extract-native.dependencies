@@ -1,0 +1,1 @@
+([:dependencies [[appengine-magic/kernel "0.6.0-SNAPSHOT" :exclusions ([org.clojure/clojure])] [org.clojure/clojure "1.5.1" :exclusions ([org.clojure/clojure])]]])

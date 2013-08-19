@@ -1,0 +1,87 @@
+;(import 'org.mortbay.jetty.webapp.WebAppContext)
+;; from sdk tools/development/JettyContainerService.java
+;(defn determinAppRoot []
+  ;; private File determineAppRoot() throws IOException {
+;  (let webInf
+  ;;   Resource webInf = context.getWebInf();
+  ;;   if (webInf == null) {
+  ;;     if (userCodeClasspathManager.requiresWebInf()) {
+  ;;       throw new AppEngineConfigException(
+  ;;           "Supplied application has to contain WEB-INF directory.");
+  ;;     }
+  ;;     return appDir;
+  ;;   }
+  ;;   return webInf.getFile().getParentFile();
+  ;; }
+
+
+;;  protected File initContext() throws IOException {
+;(defn initContext []
+;  [context (DevAppEngineWebAppContext. appDir, externalResourceDir, DevAppServerVersion)
+;
+;(appDir, externalResourceDir, devAppServerVersion,
+  ;;       apiProxyLocal);
+  ;;   this.appContext = new JettyAppContext();
+
+
+  ;;   this.context = new DevAppEngineWebAppContext(appDir, externalResourceDir, devAppServerVersion,
+  ;;       apiProxyLocal);
+  ;;   this.appContext = new JettyAppContext();
+
+  ;;   context.setDescriptor(webXmlLocation == null ? null : webXmlLocation.getAbsolutePath());
+
+  ;;   context.setDefaultsDescriptor(WEB_DEFAULTS_XML);
+
+  ;;   context.setConfigurationClasses(CONFIG_CLASSES);
+
+  ;;   File appRoot = determineAppRoot();
+  ;;   installLocalInitializationEnvironment();
+
+  ;;   URL[] classPath = getClassPathForApp(appRoot);
+  ;;   context.setClassLoader(new IsolatedAppClassLoader(appRoot, externalResourceDir, classPath,
+  ;;       JettyContainerService.class.getClassLoader()));
+
+  ;;   return appRoot;
+  ;; }
+
+  ;; private File determineAppRoot() throws IOException {
+  ;;   Resource webInf = context.getWebInf();
+  ;;   if (webInf == null) {
+  ;;     if (userCodeClasspathManager.requiresWebInf()) {
+  ;;       throw new AppEngineConfigException(
+  ;;           "Supplied application has to contain WEB-INF directory.");
+  ;;     }
+  ;;     return appDir;
+  ;;   }
+  ;;   return webInf.getFile().getParentFile();
+  ;; }
+
+
+
+
+;; from sdk /com/google/appengine/tools/development/IsolatedAppClassLoader.java
+(defn checkWorkingDirectory
+  "Issue warning if the current working dir != appRoot or externalResourceDir"
+  ;;  * The working directory of remotely deployed apps always == appRoot.
+  ;;  * For DevAppServer, We don't currently force users to set their working
+  ;;  * directory equal to the appRoot. We also don't set it for them
+  ;;  * (due to extent ramifications). The best we can do at the moment is to
+  ;;  * warn them that they may experience permission problems in production
+  ;;  * if they access files in a working directory != appRoot.
+  ;;  *
+  ;;  * If we are using an external resource directory, then it is also fine
+  ;;  * for the working directory to point there.
+  [^File appRoot, ^File externalResourceDir]
+  (let [workingDir (io/as-file (System/getProperty "user.dir"))
+        canonicalWorkingDir (.getCanonicalPath workingDir)
+        cannonicalAppRoot (.getCanonicalPath appRoot)
+        cannonicalExternalResourceDir (if externalResourceDir
+                                        (.getCanonicalPath externalResourceDir))]
+    (if (and (not (nil? canonicalWorkingDir))
+             (not (= canonicalWorkingDir canonicalAppRoot)))
+      (if (and (not (nil? canonicalExternalResourceDir))
+               (= canonicalWorkingDir (canonicalExternalResourceDir)))
+        return)
+      (log/warn (format "Your working directory, (%s), is not equal to your web application root (%s).  You will not be able to access files from your working directory on the production server.\n",
+                        (.getAbsolutePath workingDir),
+                        (.getAbsolutePath appRoot))))))

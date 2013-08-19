@@ -1,0 +1,48 @@
+(import 'com.google.appengine.tools.development.DevAppServerMain)
+
+;(require '[appengine-magic.core :as ae])
+;; (load-file "src/lex/request.clj")
+;; (load-file "src/lex/user.clj")
+;; (load-file "src/lex/views/layout.clj")
+;; (load-file "src/lex/core.clj")
+;; (defn request []
+;;   (do (load-file "src/lex/request.clj")
+;;       (ae/serve lex.request/lex-request)))
+;; (defn user []
+;;   (do (load-file "src/lex/user.clj")
+;;       (ae/serve lex.user/lex-user)))
+;; (defn core []
+;;   (do (load-file "src/lex/core.clj")
+;;       (ae/serve lex.core/lex-core)))
+
+(defn bootpath
+  []
+  (let [bp (System/getProperty "sun.boot.class.path")
+        bps (clojure.string/split bp #":")]
+    (doseq [p bps] (println p))))
+
+(defn classpath
+  []
+  (let [cp (System/getProperty "java.class.path")
+        cps (clojure.string/split cp #":")]
+    (doseq [p cps] (println p))))
+
+  ;; (println (seq (.getURLs (java.lang.ClassLoader/getSystemClassLoader)))))
+
+
+;; (System/setProperty "appengine.sdk.root" "/usr/local/java/appengine")
+;; (System/setProperty "--enable_all_permissions" "true")
+;; (System/setProperty "--property" "kickstart.user.dir=/Users/gar/lein/sibtest")
+;; (System/setProperty "kickstart.user.dir" "/Users/gar/lein/sibtest")
+;; (System/setProperty "user.dir" "/Users/gar/lein/sibtest")
+
+(defn ds []
+  (do ;(println (System/getProperty "appengine.sdk.root"))
+      (DevAppServerMain/main
+       (into-array String
+                   [;;"--address=localhost"
+                    ;;"--port=8082"
+                    "--sdk_root=war/WEB-INF/sdk"
+                    "--disable_update_check"
+                    "--property=kickstart.user.dir=/Users/gar/private/sib/web/sibawayhi/lex.magic"
+                    "/Users/gar/private/sib/web/sibawayhi/lex.magic/war"]))))
