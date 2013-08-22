@@ -7,7 +7,7 @@
 
 ;; UNCOMMENT to disable security checks:
 ;;  :java-source-paths ["src/main/java"]
-  :javac-options ["-nowarn" "-target" "1.7" "-source" "1.6" "-Xlint:-options"]
+  :javac-options ["-nowarn" "-target" "1.7" "-source" "1.7" "-Xlint:-options"]
   :resource-paths ["war/WEB-INF/classes/"
                    "war/WEB-INF/lib/*"
                    "{{sdk}}/lib/shared/*"]
@@ -69,7 +69,7 @@
                         ;; :exclude {:pattern "bar/**"}
                         }
             }
-  :aot [{{#aots}}{{aot}} {{/aots}} *]
+  :aot [{{#aots}}{{aot}} {{/aots}}]
   :compile-path "{{war}}/WEB-INF/classes"
   :target-path "{{war}}/WEB-INF/lib"
   :keep-non-project-classes false
@@ -77,12 +77,20 @@
   :jar-exclusions [#"^WEB-INF/appengine-generated.*$"]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [compojure "1.1.5"]
-                 [migae/kernel "0.6.0-SNAPSHOT"]
-                 [migae.service/user "0.6.0-SNAPSHOT"]
-                 [ring/ring-servlet "1.2.0-beta1"]
-                 [ring/ring-devel "1.2.0-beta1"]
-                 [hiccup "1.0.2"]
+                 [migae/migae-kernel "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-blobstore "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-channel "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-datastore "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-images "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-mail "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-memcache "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-taskqueues "0.1.0-SNAPSHOT"]
+                 ;; [migae.service/migae-urlfetch "0.1.0-SNAPSHOT"]
+                 [migae.service/migae-user "0.1.0-SNAPSHOT"]
+                 [ring/ring-servlet "1.2.0"]
+                 [ring/ring-devel "1.2.0"]
+                 [hiccup "1.0.4"]
                  [commons-codec "1.7"]
-                 [org.clojure/tools.logging "0.2.3"]]
+                 [org.clojure/tools.logging "0.2.6"]]
 ;;  :profiles {:dev {:dependencies [[]]}}
-  :plugins [[lein-migae "0.1.0"]])
+  :plugins [[lein-migae "0.1.0-SNAPSHOT"]])

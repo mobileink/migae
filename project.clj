@@ -1,16 +1,22 @@
 (defproject migae "0.1.0-SNAPSHOT"
-  :description "Mobile Ink Google App Engine sdk for Clojure."
+  :description "migae - Mobile Ink Google App Engine sdk for Clojure."
   :url "http://github.com/greynolds/migae"
   :min-lein-version "2.0.0"
-  :repositories {"releases" "http://appengine-magic-mvn.googlecode.com/svn/releases/"
-                 "snapshots" "http://appengine-magic-mvn.googlecode.com/svn/snapshots/"}
   :exclusions [org.clojure/clojure]
   :plugins [[lein-sub "0.2.4"]
             [codox "0.6.4"]]
-  :sub ["lib"
-        "services"]
+  :sub ["kernel"
+        "services/blobstore"
+        "services/channel"
+        "services/datastore"
+        "services/images"
+        "services/mail"
+        "services/memcache"
+        "services/taskqueues"
+        "services/urlfetch"
+        "services/user"]
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [ring/ring-core "1.1.0"]
+                 [ring/ring-core "1.2.0"]
                  [org.apache.commons/commons-exec "1.1"]
                  ;; App Engine supporting essentials
                  [javax.servlet/servlet-api "2.5"]

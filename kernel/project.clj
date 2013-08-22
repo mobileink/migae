@@ -1,4 +1,4 @@
-(defproject migae/kernel "0.1.0-SNAPSHOT"
+(defproject migae/migae-kernel "0.1.0-SNAPSHOT"
   :description "Mobile Ink Google App Engine sdk for Clojure."
   :url "http://github.com/greynolds/migae"
   :min-lein-version "2.0.0"
@@ -9,8 +9,8 @@
   :plugins [[lein-sub "0.2.1"]
             [codox "0.6.4"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [ring/ring-core "1.2.0-beta1"]
-                 [ring/ring-servlet "1.2.0-beta1"]
+                 [ring/ring-core "1.2.0"]
+                 [ring/ring-servlet "1.2.0"]
                  [org.apache.commons/commons-exec "1.1"]
                  ;; App Engine supporting essentials
                  [javax.servlet/servlet-api "2.5"]

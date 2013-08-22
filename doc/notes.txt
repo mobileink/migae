@@ -1,0 +1,166 @@
+
+Ring handlers and servlets:
+
+A Ring handler is just a function that takes a Request and returns a
+Response.  By contrast, the Service method of the Servlet API takes
+two args, a Request and a Response.  So in order for a Ring handler to
+be used in a proper Servlet, it must be converted to a Service method;
+in Ring, this is done by the make-service-method in util/servlet.clj
+in the ring-servlet package.  (Note that the service method is also a
+Clojure function, not an OO method, so its first arg is the servlet
+object, i.e. "this".)
+
+Note that Ring does not discriminate between HTTP methods (GET, PUT,
+etc.); that is up to the handler, which receives the method as a field
+in the Request.  In other words, a Ring handler logically corresponds
+to the service method of the abstract Servlet API rather than the
+HTTPServlet API, which distributes requests to other methods based on
+HTTP method (e.g. doGet, doPut, etc.).
+
+In other words: one handler, one servlet, and vice-versa.
+
+So a basic difference between implementing a servlet in Java and in
+Ring is that the latter does not support the doX methods of the
+HTTPServlet API, prefering instead to dispatch within the service
+method.  So strictly speaking Ring servlets are not HTTPServlet
+implementations, even though Ring uses the HTTPServlet API to get its
+work done.
+
+Ring's jetty adapter is not a servlet adapter; it just converts a Ring
+handler to a Jetty handler and runs it in the jetty server.  So
+there's no servlet container, no web.xml, etc.
+
+To use Ring for GAE development, we don't need to do anything special.
+We write our handler, use the Ring servlet API to convert it to a
+servlet, and that's it.
+
+Note that the application code doesn't need anything special.  A
+handler (servlet service method) is just an ordinary function; no
+special functions need be called, no special constants, nothing.  Just
+make sure the function accepts a Request map and returns a Response
+map.
+
+Notice what needs to be done to make all this work.  The Clojure stuff
+is just functions, not Java objects.  A servlet container expects a
+servlet to be a Java object that response to the Servlet API.  So we
+will need to instantiate a Java servlet object, and arrange for calls
+the container makes to its methods to be forwarded to our Clojure
+functions.  In other words, we need an intermediary between the
+servlet container that makes calls ("sends messages" in oo-speak) and
+the functions that respond to them.  In both Ring and appengine-magic,
+this is done using Clojure's "proxy".  (Apparently "reify" would give
+better performance; this would require using the Servlet interface
+rather than the HTTPServlet abstract class.)
+
+Compare the plain jetty workflow.  Define the "handler" function, then
+in the repl do:
+
+=> (use 'ring.adapter.jetty)
+=> (use 'hello-world.core)
+=> (run-jetty handler {:port 3000})
+
+Here run-jetty converts "handler" to a Jetty handler and runs it in
+plain jetty.  This won't do for GAE apps, since first we need to
+convert "handler" to a servlet, and then we need to run a servlet
+container rather than plain jetty.  So we need a "run-gae" that does
+these things.
+
+Another thing: run-jetty, like Ring, assumes that one handler will do.
+So if you want to run multiple handlers (i.e. servlets) in a web app,
+you're out of luck.  This obviously will not do; we want to provide
+complete support for GAE apps, so we must support multiple servlets as
+we must support the use of web.xml etc.  Among other things, this
+means an API change, since it won't do the pass handler names to the
+run-jetty command.  Instead we want to use web.xml to configure the
+server.
+
+One thing we can obviously try is to figure out how to run jetty as a
+servlet container, so that it will pick up config specs from web.xml,
+etc.  The problem we will run into is that the GAE devserver is a
+modified version of jetty, so we won't get an accurate replica of
+runtime conditions if we use vanilla jetty.
+
+In any case, we want to retain the principle that application code
+doesn't need to do anything special; handlers are just functions.
+Appengine magic violates this principle, since it requires that the
+handler be passed to "appengine-magic.core/def-appengine-app" in order
+to create a var.  It also requires that the servlet be defined using
+gen-class; and it requires an "entry point servlet" which must refer
+to the var created rom the handler using def-appengine-app.  This is
+way too much machinery, in my opinion.
+
+We want to minimize the bureaucracy.  The least we can get away with
+is indicating which functions are to serve as handlers (servlets).  We
+can do this with a "defServlet" macro or function that takes a handler
+argument.  This is the function that will turn a Ring handler in to a
+servlet, but converting it to a service method and instantiating (via
+proxy) an HTTPServlet object to hold it.
+
+Now the question becomes: what's the relation between Clojure
+namespaces, Java classnames, and servlet identifiers?  Given a
+"defServlet" function, we can invoke it multiple times in a single
+Clojure file, each time defining a distinct servlet.  But web.xml and
+servlet initialization need a classname.
+
+Rule: Clojure namespaces become servlet classnames in web.xml.
+
+But then what if there are multiple defServlet calls in a single namespace?
+Each will define an anonymous type using "reify".
+
+For the servlet container to work, we're required to have one servlet
+per class (file).  So if we're going to allow multiple defServlet
+calls per Clojure file, each one must generate a file somehow.
+Otherwise, we must place a restriction on use of defServlet.
+
+We also do not want the user to have to call defServlet, if possible.
+One way to do this is through leiningen project files.  Alternatively
+we could use a bit of metadata to mark our handlers.
+
+Appengine-magic and Ring don't have to deal with this, since they tell
+the runtime directly what the servlet is.  Since no servlet container
+is involved, there is no need to search the classpath for the servlet
+class named in web.xml.  But our requirements don't allow this; we
+have to create the right objects in the right places so the servlet
+container can do its job based on the config specified in web.xml.
+
+So I don't see any way around a requirement that each servlet live in
+one file.  In that case, we might as well use gen-class, like
+appengine-magic does.  With gen-class we do not need a
+"make-service-method", we just implement the -service method of the
+Servlet class.
+
+Unless, of course, we can put multiple namespaces in one file, use aot
+compilation, etc.
+
+Why does aem use proxy and make-servlet-service-method?  Apparently
+this is just so that the handler can be fed to the (jetty) devserver
+at runtime.  It goes with def-appengine-app, which makes a var out of
+the handler.  So aem behaves differently depending on environment.  It
+loads a different "core_" file depending on rte; core_local uses proxy
+to make a servlet (thus ignoring the gen-classed one?), while
+core_google just sets the var to the Clojure handler function (which
+then gets ignored, since the rte uses web.xml to find the servlet).  I
+don't know if I like that.
+
+The advantage of aem's way is of course that by setting up the servlet
+dynamically using proxy we get to use the repl for interactive
+development.  If we use gen-class then we have to aot.  (But: "The
+gen-class construct contains no implementation, as the implementation
+will be dynamically sought by the generated class in functions in an
+implementing Clojure namespace."  Doesn't that mean we can use the
+repl as long as we aot the gen-class first?)
+
+The trick is to use :impl-ns to put the -service implementation in a
+separate, non-aot namespace.  Then (I hypothesize), the aot-compiled
+servlet will be found at init time, and when the service method is
+called, it will forward it dynamically to the Clojure function.  So
+that function should be available for interactive repl development.
+
+Another thing: we want to keep it all Clojurish, with noise from OO
+distracting the user.  So: define all the handler functions you want;
+the key move is then connecting them to the config and runtime, which
+will require a separate "config api".  In Ring-jetty this is implicit
+(and hard-coded) in run-jetty.  We can use Leiningen project maps.
+
+So this will be our "kernel": whatever code is necessary to turn Ring
+handlers into Servlets runnable in a servlet container.

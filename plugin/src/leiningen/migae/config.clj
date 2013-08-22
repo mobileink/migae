@@ -43,12 +43,12 @@
 ;;orig: (let [path (string/join "/" ["leiningen" "new" (sanitize name) template])]
     (let [path (string/join "/" [(sanitize name) template])
           cpath  (.getCanonicalPath (io/file path))
-          p (println (str "canonical path: " cpath))
+          ;; p (println (str "canonical path: " cpath))
           f (io/file cpath)
-          ok (println (str "isFile " (.isFile f)))
-          a (println (str "+name: " name))
-          b (println (str "template: " template))
-          c (println (str "path: " path))
+          ;; ok (println (str "isFile " (.isFile f)))
+          ;; a (println (str "+name: " name))
+          ;; b (println (str "template: " template))
+          ;; c (println (str "path: " path))
           ]
       ;; (if-let [resource (io/resource path)]
       (if-let [resource (io/as-relative-path path)]
@@ -66,28 +66,29 @@
 ;;;;;;;;;;;;;;;;
 ;; The original code (in leiningen/src/leiningen/new/templates.clj)
 ;; creates the project dir.  That's no good for us - we're already in
-;; the proj dir, we want to process templates and put the results in
-;; the war dir.
+;; the proj dir, we want to process templates in etc and put the
+;; results in the war dir.
 (defn- template-path [name path data]
   (io/file name (render-text path data)))
 (def ^{:dynamic true} *dir* nil)
 (defn ->files
   [{:keys [name] :as data} & paths]
   (do
-    (let [dir (or *dir*
-                  (.getPath (io/file
-                             (System/getProperty "leiningen.original.pwd" name))))]
-      (println (format "->files: installing %s" dir))
-      (if (or *dir* (.mkdir (io/file dir)))
+    ;; (let [dir (or *dir*
+    ;;               (.getPath (io/file
+    ;;                          (System/getProperty "leiningen.original.pwd" name))))]
+    ;;   (println (format "->files: installing %s" dir))
+;      (if (or *dir* (.mkdir (io/file dir)))
         (let [dir "./"]
           (doseq [path paths]
-            (println (format "->files: installing %s" path))
-            (if (string? path)
-              (.mkdirs (template-path dir path data))
-              (let [[path content] path
-                    path (template-path dir path data)]
-                (.mkdirs (.getParentFile path))
-                (io/copy content (io/file path))))))))))
+            (do
+              (println (format "->files: installing to %s" (first path)))
+              (if (string? path)
+                (.mkdirs (template-path dir path data))
+                (let [[path content] path
+                      path (template-path dir path data)]
+                  (.mkdirs (.getParentFile path))
+                  (io/copy content (io/file path)))))))))
 
 ;;                                         ;    (println "Could not create directory " dir ". Maybe it already exists?"))))
 ;; ;; end of overrides
@@ -153,16 +154,21 @@ run 'lein migae config'."
                 :java-logging	(:java-logging config)}]
 
       (println (format "copying static files from src tree to war tree"))
-      ;; TODO:  use {{statics}} instead of hardcoded paths
+      ;; TODO:  use {{statics}} instead of hardcoded paths, e.g.
+                 ;; ["{{war}}/{{static_dest}}/css/{{project}}.css"
+                 ;;  (render (render-text "{{static_src}}/css/{{project}}.css" data))]
+                 ;; ["{{war}}/{{static_dest}}/js/{{project}}.js"
+                 ;;  (render (render-text "{{static_src}}/js/{{project}}.js" data))]
+
       (copy-tree "src/main/public" "war")
       ;; (copy-tree "src/main/public/css" "war/css")
       ;; (copy-tree "src/main/public/js" "war/js")
 
-      ;;      (println (format "installing config XML files to %s"
-      ;;                       (string/join "/" ["war" "WEB-INF"])))
-
-      ;;      (println (format "copying logging specs from etc to war tree"))
+                 ;; TODO: handle binary files??
+                 ;; ["{{war}}/favicon.ico"
+                 ;;  (render (render-text "{{resource_src}}/favicon.ico" data))]
       ;;      (println (format "copying resource files from src tree to war tree"))
+
       (println (format "installing templates"))
       (do
         (->files data
@@ -171,29 +177,11 @@ run 'lein migae config'."
                  ["{{war}}/WEB-INF/appengine-web.xml"
                   (render "appengine-web.xml.mustache" data)]
 
-                 ;; (render (str "etc" (:name project)
-                 ;;              "/appengine-web.xml.mustache")
-                 ;;         data)]
+                 ["{{war}}/WEB-INF/web.xml"
+                  (render "web.xml.mustache" config)]
 
-                 ;; ["{{war}}/WEB-INF/web.xml"
-                 ;;  (render "etc/web.xml.mustache" config)]
-
-                 ;; ["{{war}}/{{welcome}}"
-                 ;;  (render (render-text "{{static_src}}/{{welcome}}" data))]
-
-                 ;; TODO copy the entire static src tree
-
-                 ;; ["{{war}}/{{static_dest}}/css/{{project}}.css"
-                 ;;  (render (render-text "{{static_src}}/css/{{project}}.css" data))]
-                 ;; ["{{war}}/{{static_dest}}/js/{{project}}.js"
-                 ;;  (render (render-text "{{static_src}}/js/{{project}}.js" data))]
-
-                 ;; TODO: handle binary files??
-                 ;; ["{{war}}/favicon.ico"
-                 ;;  (render (render-text "{{resource_src}}/favicon.ico" data))]
-
-                 ;; ["{{war}}/WEB-INF/{{java-logging}}"
-                 ;;  (render (render-text "etc/{{java-logging}}" data))]
+                 ["{{war}}/WEB-INF/{{java-logging}}"
+                  (render (render-text "{{java-logging}}" data))]
 
                  )
         (println "ok"))

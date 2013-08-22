@@ -6,11 +6,11 @@
             LocalMailServiceTestConfig
             LocalDatastoreServiceTestConfig
             LocalUserServiceTestConfig]
-;           [appengine-magic.service.datastore EntityMap]
+;           [migae.service.migae-datastore EntityMap]
            [com.google.apphosting.api ApiProxy])
-;  (:require [appengine-magic.service.datastore.EntityMap])
+;  (:require [migae.service.migae-datastore.EntityMap])
   (:use clojure.test
-        [appengine-magic.service.datastore :as ds]))
+        [migae.service.migae-datastore :as ds]))
 
 (defn datastore [& {:keys [storage? store-delay-ms
                            max-txn-lifetime-ms max-query-lifetime-ms
@@ -116,9 +116,9 @@
       (is (= (:entity (meta newEntity)) (:entity (meta fetched-by-key))))
       (is (= (:entity (meta newEntity)) (:entity (meta fetched-by-map))))
       (is (= (:entity (meta fetched-by-key)) (:entity (meta fetched-by-map))))
-      (is (= (type newEntity) :appengine-magic.service.datastore/Entity))
-      (is (= (type fetched-by-key) :appengine-magic.service.datastore/Entity))
-      (is (= (type fetched-by-map) :appengine-magic.service.datastore/Entity))
+      (is (= (type newEntity) :migae.service.migae-datastore/Entity))
+      (is (= (type fetched-by-key) :migae.service.migae-datastore/Entity))
+      (is (= (type fetched-by-map) :migae.service.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn newEntity))
       (is (instance? clojure.lang.IFn fetched-by-key))
       (is (instance? clojure.lang.IFn fetched-by-map))
@@ -135,7 +135,7 @@
     ;; (ds/get-datastore-service)
     (let [e1 (ds/Entities ^{:kind :Employee}{})
           e2 (ds/Entities ^{:kind :Employee}{})]
-      (is (= (type e1) :appengine-magic.service.datastore/Entity))
+      (is (= (type e1) :migae.service.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn e1))
       (is (= (:kind (meta e1)) :Employee))
       ;; name-less, id-less entities always assigned unique numeric id
@@ -151,8 +151,8 @@
           e2 (ds/Entities ^{:kind :Employee, :name "smith"}{})
           newEntity (ds/Entities ^{:kind :Employee, :name "asalieri"}{})
           fetched (ds/Entities ^{:kind :Employee, :name "asalieri"}{})]
-      (is (= (type newEntity) :appengine-magic.service.datastore/Entity))
-      (is (= (type fetched) :appengine-magic.service.datastore/Entity))
+      (is (= (type newEntity) :migae.service.migae-datastore/Entity))
+      (is (= (type fetched) :migae.service.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn newEntity))
       (is (instance? clojure.lang.IFn fetched))
       (is (= (:kind (meta newEntity)) :Employee))
@@ -175,8 +175,8 @@
                         ^{:kind :Employee, :id 123}
                         {}) ;; empty
           fetched (ds/Entities ^{:kind :Employee, :id 123}{})]
-      (is (= (type newEntity) :appengine-magic.service.datastore/Entity))
-      (is (= (type fetched) :appengine-magic.service.datastore/Entity))
+      (is (= (type newEntity) :migae.service.migae-datastore/Entity))
+      (is (= (type fetched) :migae.service.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn newEntity))
       (is (instance? clojure.lang.IFn fetched))
       (is (= (:kind (meta newEntity)) :Employee))
@@ -203,8 +203,8 @@
           theChild  (ds/Entities ^{:kind :Person,
                                       :name "child",
                                       :parent theParent}{})]
-      (is (= (type theParent) :appengine-magic.service.datastore/Entity))
-      (is (= (type theChild) :appengine-magic.service.datastore/Entity))
+      (is (= (type theParent) :migae.service.migae-datastore/Entity))
+      (is (= (type theChild) :migae.service.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn theParent))
       (is (instance? clojure.lang.IFn theChild))
       (is (= (:kind (meta theParent)) :Person))
@@ -225,8 +225,8 @@
                                       :parent ^{:kind :Person
                                                 :name "parent"}{}
                                       }{})]
-      (is (= (type theParent) :appengine-magic.service.datastore/Entity))
-      (is (= (type theChild) :appengine-magic.service.datastore/Entity))
+      (is (= (type theParent) :migae.service.migae-datastore/Entity))
+      (is (= (type theChild) :migae.service.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn theParent))
       (is (instance? clojure.lang.IFn theChild))
       (is (= (:kind (meta theParent)) :Person))
@@ -249,9 +249,9 @@
                                  :parent ^{:kind :Person :name "gramps"}{}
                                  }{}
                        }{})]
-;      (is (= (type theParent) :appengine-magic.service.datastore/Entity))
-;      (is (= (type theParent) :appengine-magic.service.datastore/Entity))
-      (is (= (type theChild) :appengine-magic.service.datastore/Entity))
+;      (is (= (type theParent) :migae.service.migae-datastore/Entity))
+;      (is (= (type theParent) :migae.service.migae-datastore/Entity))
+      (is (= (type theChild) :migae.service.migae-datastore/Entity))
 ;      (is (instance? clojure.lang.IFn theParent))
       (is (instance? clojure.lang.IFn theChild))
 ;      (is (= (:kind (meta theParent)) :Person))
