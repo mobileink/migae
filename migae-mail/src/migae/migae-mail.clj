@@ -1,9 +1,10 @@
-(ns migae.service.migae-mail
+(ns migae.migae-mail
   (:refer-clojure :exclude (send))
-  (:use [migae.kernel.utils :only [record copy-stream]])
+  (:use [migae.migae-core.utils :only [record copy-stream]])
   (:import [com.google.appengine.api.mail MailServiceFactory
             MailService$Message MailService$Attachment]))
 
+;; original code from appengine-magic
 
 (defonce ^{:dynamic true} *mail-service* (atom nil))
 
