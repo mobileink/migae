@@ -1,4 +1,4 @@
-(ns migae.migae-kernel
+(ns migae.migae-core
   (:import [com.google.apphosting.api ApiProxy]
            [com.google.appengine.api.utils SystemProperty]))
 
@@ -41,8 +41,8 @@
   (-> (ApiProxy/getCurrentEnvironment) (.getRemainingMillis)))
 
 ;; etc:
-    ;; kernel/fileSeparator
-    ;; kernel/pathSeparator
+    ;; core/fileSeparator
+    ;; core/pathSeparator
     ;; etc.
     ;;     line.separator
     ;;     java.version

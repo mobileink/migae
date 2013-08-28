@@ -1,4 +1,4 @@
-(ns migae.migae-kernel.utils
+(ns migae.migae-core.utils
   (:import [java.io File FileInputStream FileWriter InputStream OutputStream]
            java.nio.ByteBuffer
            [java.nio.channels Channel Channels ReadableByteChannel WritableByteChannel]
