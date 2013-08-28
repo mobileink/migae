@@ -1,12 +1,12 @@
-(ns migae.service.migae-memcache
+(ns migae.migae-memcache
   (:refer-clojure :exclude (contains? get))
 ;;  (:use [migae.utils :only [record]])
-  (:require [miage.kernel :as kernel]
-            [miage.kernel.utils :as u]
-            [miage.service.migae-datastore :as ds])
+  (:require [miage.core :as kernel]
+            [miage.core.utils :as u]
+            [miage.migae-datastore :as ds])
   (:import [com.google.appengine.api.memcache MemcacheService MemcacheServiceFactory
             MemcacheService$SetPolicy]
-           migae.service.migae_datastore.EntityProtocol))
+           migae.migae_datastore.EntityProtocol))
 
 (defonce ^{:dynamic true} *memcache-service* (atom nil))
 (defonce ^{:dynamic true} *namespaced-memcache-services* (atom {}))

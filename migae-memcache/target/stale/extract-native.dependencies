@@ -1,1 +1,0 @@
-([:dependencies [[org.clojure/clojure "1.5.1" :exclusions ([org.clojure/clojure])] [migae/migae-kernel "0.1.0-SNAPSHOT" :exclusions ([org.clojure/clojure])] [migae.service/migae-datastore "0.1.0-SNAPSHOT" :exclusions ([org.clojure/clojure])]]])
