@@ -1,4 +1,4 @@
-(ns migae.service.migae-datastore
+(ns migae.migae-datastore
   (:import [com.google.appengine.api.datastore
             KeyFactory
             Key
@@ -23,7 +23,7 @@
             Text
             Link]
            [com.google.appengine.api.blobstore BlobKey])
-  (:use migae.kernel.utils))
+  (:use migae.migae-core.utils))
 
 (defonce ^{:dynamic true} *datastore-service* (atom nil))
 (defn get-datastore-service []
@@ -125,11 +125,11 @@
         arg3 (if (nil? parent) nil
                  (cond
                   (= (type parent)
-                     :migae.service.migae-datastore/Key)
+                     :migae.migae-datastore/Key)
                   ;;no yet
                   nil
                   (= (type parent)
-                     :migae.service.migae-datastore/Entity)
+                     :migae.migae-datastore/Entity)
                   (:key (meta parent))
                   :else  ;; type parent = EntityMap
                   (:key (meta (Entities parent)))))
@@ -152,8 +152,8 @@
 
 
 ;; QUESTION: do we want to implement a
-;; :migae.service.migae-datastore/Key clojo to go with our
-;; :migae.service.migae-datastore/Entity clojo?
+;; :migae.migae-datastore/Key clojo to go with our
+;; :migae.migae-datastore/Entity clojo?
 
 (defn- make-entity
   ;; "make-entity wraps an Entity in a function.  It memoizes
@@ -167,7 +167,7 @@
         ;; then construct function
         ^{:entity theEntity
           :parent (.getParent theEntity)
-          :type ::Entity ;; :migae.service.migae-datastore/Entity
+          :type ::Entity ;; :migae.migae-datastore/Entity
           :key (.getKey theEntity)
           :kind (keyword (.getKind theEntity))
           :namespace (.getNamespace theEntity)
@@ -312,11 +312,11 @@
               arg3 (if (nil? parent) nil
                        (cond
                         (= (type parent)
-                           :migae.service.migae-datastore/Key)
+                           :migae.migae-datastore/Key)
                            ;;no yet
                            nil
                         (= (type parent)
-                           :migae.service.migae-datastore/Entity)
+                           :migae.migae-datastore/Entity)
                            (:key (meta parent))
                         :else  ;; type parent = EntityMap
                            (:key (meta (Entities parent)))))
