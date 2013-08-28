@@ -1,5 +1,5 @@
 (ns migae.migae-taskqueues
-  (:require [migae.migae-datastore :as ds])
+;  (:require [migae.migae-datastore :as ds])
   (:import java.util.Date
            [com.google.appengine.api.taskqueue Queue QueueFactory
             TaskOptions$Builder TaskOptions$Method]))
@@ -33,9 +33,10 @@
 
 ;; TODO: Support adding multiple tasks at once.
 (defn add! [& {:keys [queue url task-name
-                      join-current-transaction? params headers payload method
+                      ;; join-current-transaction?
+                      params headers payload method
                       countdown-ms eta-ms eta]
-               :or {join-current-transaction? false
+               :or {;;join-current-transaction? false
                     params {}
                     headers {}
                     method :post}}]
@@ -93,10 +94,10 @@
      ;; nothing given, no problem
      :else nil)
     ;; transactions and done
-    (if join-current-transaction?
-        (.add queue-obj ds/*current-transaction* opts)
-        (.add queue-obj opts))))
-
+    ;; (if join-current-transaction?
+    ;;     (.add queue-obj ds/*current-transaction* opts)
+    ;;     (.add queue-obj opts))))
+    ))
 
 (defn purge! [& {:keys [queue]}]
   (let [queue-obj (get-task-queue :queue queue)]

@@ -22,8 +22,8 @@
             ShortBlob
             Text
             Link]
-           [com.google.appengine.api.blobstore BlobKey])
-  (:use migae.migae-core.utils))
+           [com.google.appengine.api.blobstore BlobKey]))
+  ;; (:use migae.migae-core.utils))
 
 (defonce ^{:dynamic true} *datastore-service* (atom nil))
 (defn get-datastore-service []

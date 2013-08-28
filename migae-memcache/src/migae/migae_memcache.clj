@@ -1,12 +1,9 @@
 (ns migae.migae-memcache
   (:refer-clojure :exclude (contains? get))
 ;;  (:use [migae.utils :only [record]])
-  (:require [miage.core :as kernel]
-            [miage.core.utils :as u]
-            [miage.migae-datastore :as ds])
+  (:require [migae.migae-core.utils :as u])
   (:import [com.google.appengine.api.memcache MemcacheService MemcacheServiceFactory
-            MemcacheService$SetPolicy]
-           migae.migae_datastore.EntityProtocol))
+            MemcacheService$SetPolicy]))
 
 (defonce ^{:dynamic true} *memcache-service* (atom nil))
 (defonce ^{:dynamic true} *namespaced-memcache-services* (atom {}))
@@ -71,23 +68,23 @@
             (.delete service key-or-keys)))))
 
 
-(defn- to-entity-cast [value]
-  (if (and (= :interactive (kernel/appengine-environment-type))
-           (instance? EntityProtocol value))
-      (let [obj-meta (merge (meta value) {:type (.getName (class value))})
-            obj-map (into {} value)]
-        (with-meta obj-map obj-meta))
-      value))
+(defn- to-entity-cast [value] value)
+  ;; (if (and (= :interactive (gae/gae-environment-type))
+  ;;          (instance? EntityProtocol value))
+  ;;     (let [obj-meta (merge (meta value) {:type (.getName (class value))})
+  ;;           obj-map (into {} value)]
+  ;;       (with-meta obj-map obj-meta))
+  ;;     value))
 
 
 (defn- to-entity-cast-many [value-map]
-  (if (= :interactive (kernel/appengine-environment-type))
+  (if (= :interactive (gae/gae-environment-type))
       (into {} (map (fn [[k v]] [k (to-entity-cast v)]) value-map))
       value-map))
 
 
 (defn- from-entity-cast [value]
-  (if (and (= :interactive (kernel/appengine-environment-type))
+  (if (and (= :interactive (gae/gae-environment-type))
            (not (nil? (meta value)))
            (clojure.core/contains? (meta value) :type))
       (let [claimed-class (Class/forName (:type (meta value)))]
@@ -96,7 +93,7 @@
 
 
 (defn- from-entity-cast-many [value-map]
-  (if (= :interactive (kernel/appengine-environment-type))
+  (if (= :interactive (gae/gae-environment-type))
       (into {} (map (fn [[k v]] [k (from-entity-cast v)]) value-map))
       (into {} value-map)))
 

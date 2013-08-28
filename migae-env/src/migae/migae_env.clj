@@ -1,10 +1,10 @@
-(ns migae.migae-core
+(ns migae.migae-env
   (:import [com.google.apphosting.api ApiProxy]
            [com.google.appengine.api.utils SystemProperty]))
 
 (declare migae-type)
 
-(defn migae-environment-type []
+(defn gae-environment-type []
   (let [env-property (System/getProperty "com.google.appengine.runtime.environment")]
     (cond
      (= env-property "Development") :dev-appserver
@@ -41,8 +41,8 @@
   (-> (ApiProxy/getCurrentEnvironment) (.getRemainingMillis)))
 
 ;; etc:
-    ;; core/fileSeparator
-    ;; core/pathSeparator
+    ;; env/fileSeparator
+    ;; env/pathSeparator
     ;; etc.
     ;;     line.separator
     ;;     java.version
