@@ -3,9 +3,18 @@
 ## Status
 
 This is derived from appengine-magic.  It's basically a reorganization
-of the codebase to make it conform to leiningen 2 patterns.  It is not
-finished, so don't bother downloading it and trying to use it- it
-won't work.
+of the codebase to make it conform to leiningen 2 patterns.  In
+particular, each GAE service is separately packaged.  Most of the
+implementation is taken directly from appengine-magic, but some is
+original (e.g. datastore).  It is not finished, so don't bother
+downloading it and trying to use it- it won't work.
+
+The main differences from appengine-magic: modularization of services,
+removal of embedded server code, segregation of plugin and template
+code.  This code assumes use of dev_appserver for testing, with the
+interactive hack described in migae-examples/gae2.
+
+See CHANGES for details.
 
 _*This documentation is currently unstable and changes frequently.*_
 
@@ -27,25 +36,23 @@ _*This documentation is currently unstable and changes frequently.*_
 
 ## Libraries
 
- * appengine-magic/kernel
- * appengine-magic/services
- * appengine-magic.service/user
- * appengine-magic.service/datastore
+ * migae/migae-core
+ * migae/migae-blobstore
+ * migae/migae-channel
+ * migae/migae-datastore
  * etc.
 
 ## Installation (NOT YET RELEASED)
 
-    [appengine-magic/kernel "x.y.z"]
-    [appengine-magic/services "x.y.z"]
-    [appengine-magic/service/user "x.y.z"]
-    [appengine-magic/service/datastore "x.y.z"]
-    etc.
-    [appengine-magic "x.y.z"] ;; everything
+    [migae/migae-blobstore "0.1.0-SNAPSHOT"]
+    [migae/migae-channel "0.1.0-SNAPSHOT"]
+    etc. (these include migae-core)
+    [migae "x.y.z"] ;; everything
 
 For now you have to clone the repo, build the lib, and "lein install"
 to make it available on your local system.
 
-## Developing appengine-magic applications
+## Developing migae applications
 
 ### devserver and magic
 
