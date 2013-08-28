@@ -1,4 +1,4 @@
-(ns migae.service.migae-urlfetch
+(ns migae.migae-urlfetch
   (:import [com.google.appengine.api.urlfetch
             URLFetchServiceFactory
             FetchOptions
@@ -6,6 +6,8 @@
             HTTPHeader
             HTTPRequest
             HTTPMethod]))
+
+;; original code from appengine-magic
 
 (defonce ^{:dynamic true} *urlfetch-service* (atom nil))
 
