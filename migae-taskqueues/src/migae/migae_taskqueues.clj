@@ -1,9 +1,10 @@
-(ns migae.service.migae-taskqueues
-  (:require [migae.service.migae-datastore :as ds])
+(ns migae.migae-taskqueues
+  (:require [migae.migae-datastore :as ds])
   (:import java.util.Date
            [com.google.appengine.api.taskqueue Queue QueueFactory
             TaskOptions$Builder TaskOptions$Method]))
 
+;; original code from appengine-magic
 
 (defonce ^{:dynamic true} *default-queue* (atom nil))
 (defonce ^{:dynamic true} *named-queues* (atom {}))
