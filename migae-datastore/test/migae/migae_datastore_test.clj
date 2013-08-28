@@ -1,4 +1,4 @@
-(ns datastore.service-test
+(ns migae.migae-datastore-test
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
             LocalServiceTestConfig
@@ -10,7 +10,7 @@
            [com.google.apphosting.api ApiProxy])
 ;  (:require [migae.service.migae-datastore.EntityMap])
   (:use clojure.test
-        [migae.service.migae-datastore :as ds]))
+        [migae.migae-datastore :as ds]))
 
 (defn datastore [& {:keys [storage? store-delay-ms
                            max-txn-lifetime-ms max-query-lifetime-ms
