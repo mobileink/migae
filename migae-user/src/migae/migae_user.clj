@@ -1,6 +1,7 @@
-(ns migae.service.migae-user
+(ns migae.migae-user
   (:import [com.google.appengine.api.users User UserService UserServiceFactory]))
 
+;; original source: appengine-magic
 
 (defonce ^{:dynamic true} *user-service* (atom nil))
 
