@@ -1,8 +1,10 @@
 (ns migae.migae-memcache
   (:refer-clojure :exclude (contains? get))
 ;;  (:use [migae.utils :only [record]])
-  (:require [migae.migae-core.utils :as u])
-  (:import [com.google.appengine.api.memcache MemcacheService MemcacheServiceFactory
+  ;; (:require [migae.migae-core.utils :as u])
+  (:import [com.google.appengine.api.memcache
+            MemcacheService
+            MemcacheServiceFactory
             MemcacheService$SetPolicy]))
 
 (defonce ^{:dynamic true} *memcache-service* (atom nil))
@@ -77,25 +79,25 @@
   ;;     value))
 
 
-(defn- to-entity-cast-many [value-map]
-  (if (= :interactive (gae/gae-environment-type))
-      (into {} (map (fn [[k v]] [k (to-entity-cast v)]) value-map))
-      value-map))
+(defn- to-entity-cast-many [value-map] value-map)
+  ;; (if (= :interactive (gae/gae-environment-type))
+  ;;     (into {} (map (fn [[k v]] [k (to-entity-cast v)]) value-map))
+  ;;     value-map))
 
 
-(defn- from-entity-cast [value]
-  (if (and (= :interactive (gae/gae-environment-type))
-           (not (nil? (meta value)))
-           (clojure.core/contains? (meta value) :type))
-      (let [claimed-class (Class/forName (:type (meta value)))]
-        (with-meta (u/record claimed-class value) (dissoc (meta value) :type)))
-      value))
+(defn- from-entity-cast [value] value)
+  ;; (if (and (= :interactive (gae/gae-environment-type))
+  ;;          (not (nil? (meta value)))
+  ;;          (clojure.core/contains? (meta value) :type))
+  ;;     (let [claimed-class (Class/forName (:type (meta value)))]
+  ;;       (with-meta (u/record claimed-class value) (dissoc (meta value) :type)))
+      ;; value))
 
 
 (defn- from-entity-cast-many [value-map]
-  (if (= :interactive (gae/gae-environment-type))
-      (into {} (map (fn [[k v]] [k (from-entity-cast v)]) value-map))
-      (into {} value-map)))
+  ;; (if (= :interactive (gae/gae-environment-type))
+  ;;     (into {} (map (fn [[k v]] [k (from-entity-cast v)]) value-map))
+      (into {} value-map))
 
 
 (defn get
