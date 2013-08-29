@@ -2,35 +2,36 @@
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
             LocalServiceTestConfig
-            LocalMemcacheServiceTestConfig LocalMemcacheServiceTestConfig$SizeUnit
+            LocalMemcacheServiceTestConfig
+            LocalMemcacheServiceTestConfig$SizeUnit
             LocalMailServiceTestConfig
             LocalDatastoreServiceTestConfig
             LocalUserServiceTestConfig]
-;           [migae.service.migae-datastore EntityMap]
+;           [migae.migae-datastore EntityMap]
            [com.google.apphosting.api ApiProxy])
-;  (:require [migae.service.migae-datastore.EntityMap])
+;  (:require [migae.migae-datastore.EntityMap])
   (:use clojure.test
         [migae.migae-datastore :as ds]))
 
-(defn datastore [& {:keys [storage? store-delay-ms
-                           max-txn-lifetime-ms max-query-lifetime-ms
-                           backing-store-location]
-                    :or {storage? false}}]
-  (let [ldstc (LocalDatastoreServiceTestConfig.)]
-    (.setNoStorage ldstc (not storage?))
-    (when-not (nil? store-delay-ms)
-      (.setStoreDelayMs ldstc store-delay-ms))
-    (when-not (nil? max-txn-lifetime-ms)
-      (.setMaxTxnLifetimeMs ldstc max-txn-lifetime-ms))
-    (when-not (nil? max-query-lifetime-ms)
-      (.setMaxQueryLifetimeMs ldstc max-query-lifetime-ms))
-    (if-not (nil? backing-store-location)
-        (.setBackingStoreLocation ldstc backing-store-location)
-        (.setBackingStoreLocation ldstc "/dev/null"))
-        ;; (.setBackingStoreLocation ldstc (if (= :windows (os-type))
-        ;;                                     "NUL"
-        ;;                                     "/dev/null")))
-    ldstc))
+;; (defn datastore [& {:keys [storage? store-delay-ms
+;;                            max-txn-lifetime-ms max-query-lifetime-ms
+;;                            backing-store-location]
+;;                     :or {storage? false}}]
+;;   (let [ldstc (LocalDatastoreServiceTestConfig.)]
+;;     (.setNoStorage ldstc (not storage?))
+;;     (when-not (nil? store-delay-ms)
+;;       (.setStoreDelayMs ldstc store-delay-ms))
+;;     (when-not (nil? max-txn-lifetime-ms)
+;;       (.setMaxTxnLifetimeMs ldstc max-txn-lifetime-ms))
+;;     (when-not (nil? max-query-lifetime-ms)
+;;       (.setMaxQueryLifetimeMs ldstc max-query-lifetime-ms))
+;;     (if-not (nil? backing-store-location)
+;;         (.setBackingStoreLocation ldstc backing-store-location)
+;;         (.setBackingStoreLocation ldstc "/dev/null"))
+;;         ;; (.setBackingStoreLocation ldstc (if (= :windows (os-type))
+;;         ;;                                     "NUL"
+;;         ;;                                     "/dev/null")))
+;;     ldstc))
 
 ;; (defn- make-local-services-fixture-fn [services hook-helper]
 (defn- ds-fixture
@@ -116,9 +117,9 @@
       (is (= (:entity (meta newEntity)) (:entity (meta fetched-by-key))))
       (is (= (:entity (meta newEntity)) (:entity (meta fetched-by-map))))
       (is (= (:entity (meta fetched-by-key)) (:entity (meta fetched-by-map))))
-      (is (= (type newEntity) :migae.service.migae-datastore/Entity))
-      (is (= (type fetched-by-key) :migae.service.migae-datastore/Entity))
-      (is (= (type fetched-by-map) :migae.service.migae-datastore/Entity))
+      (is (= (type newEntity) :migae.migae-datastore/Entity))
+      (is (= (type fetched-by-key) :migae.migae-datastore/Entity))
+      (is (= (type fetched-by-map) :migae.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn newEntity))
       (is (instance? clojure.lang.IFn fetched-by-key))
       (is (instance? clojure.lang.IFn fetched-by-map))
@@ -135,7 +136,7 @@
     ;; (ds/get-datastore-service)
     (let [e1 (ds/Entities ^{:kind :Employee}{})
           e2 (ds/Entities ^{:kind :Employee}{})]
-      (is (= (type e1) :migae.service.migae-datastore/Entity))
+      (is (= (type e1) :migae.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn e1))
       (is (= (:kind (meta e1)) :Employee))
       ;; name-less, id-less entities always assigned unique numeric id
@@ -151,8 +152,8 @@
           e2 (ds/Entities ^{:kind :Employee, :name "smith"}{})
           newEntity (ds/Entities ^{:kind :Employee, :name "asalieri"}{})
           fetched (ds/Entities ^{:kind :Employee, :name "asalieri"}{})]
-      (is (= (type newEntity) :migae.service.migae-datastore/Entity))
-      (is (= (type fetched) :migae.service.migae-datastore/Entity))
+      (is (= (type newEntity) :migae.migae-datastore/Entity))
+      (is (= (type fetched) :migae.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn newEntity))
       (is (instance? clojure.lang.IFn fetched))
       (is (= (:kind (meta newEntity)) :Employee))
@@ -175,8 +176,8 @@
                         ^{:kind :Employee, :id 123}
                         {}) ;; empty
           fetched (ds/Entities ^{:kind :Employee, :id 123}{})]
-      (is (= (type newEntity) :migae.service.migae-datastore/Entity))
-      (is (= (type fetched) :migae.service.migae-datastore/Entity))
+      (is (= (type newEntity) :migae.migae-datastore/Entity))
+      (is (= (type fetched) :migae.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn newEntity))
       (is (instance? clojure.lang.IFn fetched))
       (is (= (:kind (meta newEntity)) :Employee))
@@ -203,8 +204,8 @@
           theChild  (ds/Entities ^{:kind :Person,
                                       :name "child",
                                       :parent theParent}{})]
-      (is (= (type theParent) :migae.service.migae-datastore/Entity))
-      (is (= (type theChild) :migae.service.migae-datastore/Entity))
+      (is (= (type theParent) :migae.migae-datastore/Entity))
+      (is (= (type theChild) :migae.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn theParent))
       (is (instance? clojure.lang.IFn theChild))
       (is (= (:kind (meta theParent)) :Person))
@@ -225,8 +226,8 @@
                                       :parent ^{:kind :Person
                                                 :name "parent"}{}
                                       }{})]
-      (is (= (type theParent) :migae.service.migae-datastore/Entity))
-      (is (= (type theChild) :migae.service.migae-datastore/Entity))
+      (is (= (type theParent) :migae.migae-datastore/Entity))
+      (is (= (type theChild) :migae.migae-datastore/Entity))
       (is (instance? clojure.lang.IFn theParent))
       (is (instance? clojure.lang.IFn theChild))
       (is (= (:kind (meta theParent)) :Person))
@@ -249,9 +250,9 @@
                                  :parent ^{:kind :Person :name "gramps"}{}
                                  }{}
                        }{})]
-;      (is (= (type theParent) :migae.service.migae-datastore/Entity))
-;      (is (= (type theParent) :migae.service.migae-datastore/Entity))
-      (is (= (type theChild) :migae.service.migae-datastore/Entity))
+;      (is (= (type theParent) :migae.migae-datastore/Entity))
+;      (is (= (type theParent) :migae.migae-datastore/Entity))
+      (is (= (type theChild) :migae.migae-datastore/Entity))
 ;      (is (instance? clojure.lang.IFn theParent))
       (is (instance? clojure.lang.IFn theChild))
 ;      (is (= (:kind (meta theParent)) :Person))
