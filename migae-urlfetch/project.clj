@@ -4,4 +4,7 @@
   :min-lein-version "2.0.0"
   :aot [#".*"]
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [com.google.appengine/appengine-api-1.0-sdk "1.8.3"]])
+                 [org.clojure/tools.logging "0.2.3"]
+                 [com.google.appengine/appengine-api-1.0-sdk "1.8.3"]]
+  :profiles {:dev {:dependencies
+                   [[org.clojure/tools.logging "0.2.3"]]}})

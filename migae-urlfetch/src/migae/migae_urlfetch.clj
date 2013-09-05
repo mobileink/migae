@@ -5,7 +5,8 @@
             FetchOptions$Builder
             HTTPHeader
             HTTPRequest
-            HTTPMethod]))
+            HTTPMethod])
+  (:require [clojure.tools.logging :as log]))
 
 ;; original code from appengine-magic
 
@@ -93,8 +94,36 @@
   [url & {:keys [async?] :or {async? false} :as opts}]
   (let [opts (flatten (vec opts))]
     (if async?
-        ;; (derefify-future (.fetchAsync (get-urlfetch-service)
-        ;;                               (apply make-request (urlify url) opts))
-        ;;                  :deref-fn #(parse-response (.get %)))
-        (parse-response (.fetch (get-urlfetch-service)
-                                (apply make-request (urlify url) opts))))))
+      (log/warn "async fetch not yet implemented")
+      ;; (derefify-future (.fetchAsync (get-urlfetch-service)
+      ;;                               (apply make-request (urlify url) opts))
+      ;;                  :deref-fn #(parse-response (.get %)))
+      (parse-response
+       (try
+         (.fetch (get-urlfetch-service)
+                 (apply make-request (urlify url) opts))
+         (catch java.io.IOException e
+           ;; remote service could not be contacted or the URL could not be fetched.
+           (log/warning "migae.migae-urlfetch fetch IOException: " (.getMessage e))
+           (throw e))
+         (catch com.google.appengine.api.urlfetch.ResponseTooLargeException e
+           (log/warning "migae.migae-urlfetch fetch GAE ResponseTooLargeException: "
+                (.getMessage e))
+           (throw e))
+         (catch java.net.MalformedURLException e
+           (log/warning "migae.migae-urlfetch fetch: MalformedURLException: " (.getMessage e))
+                    (throw e))
+         (catch java.net.SocketTimeoutException e
+           (log/warning "migae.migae-urlfetch fetch SocketTimeoutException: " (.getMessage e))
+                    (throw e))
+         (catch javax.net.ssl.SSLHandshakeException e
+           ;; server's SSL cert could not be validated and validation was requested.
+           (log/warning "migae.migae-urlfetch fetch SSLHandshakeException: " (.getMessage e))
+           (throw e))
+         (catch Exception e
+           ;; server's SSL cert could not be validated and validation was requested.
+           (log/warning "migae.migae-urlfetch fetch Exception: " (.getMessage e))
+                    (throw e))
+         )))))
+
+
