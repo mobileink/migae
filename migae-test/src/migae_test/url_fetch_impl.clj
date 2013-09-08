@@ -2,7 +2,10 @@
   (:use compojure.core
         [ring.middleware.params :only [wrap-params]]
         [ring.middleware.file-info :only [wrap-file-info]])
-  (:require [compojure.route :as route]))
+  (:require [compojure.route :as route]
+            [migae.migae-urlfetch :as fetch]
+            [clojure.tools.logging :as log :only [debug info]]))
+
 
 (defroutes url-fetch-routes
   (GET "/urlfetch/:arg" [arg]

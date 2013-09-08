@@ -68,7 +68,8 @@
                       :ns "migae-test.user-servlet",
                       :class "migae_test.user_servlet",
                       :filters [{:filter "reload_filter"}],
-                      :services [{:service "user" :url-pattern  "/user/*"}]}
+                      :services [{:service "user" :url-pattern  "/user/*"}
+                                 {:service "login" :url-pattern  "/_ah/login*"}]}
                      ]
           :war "war"
           :display-name "migae-test"
@@ -108,6 +109,7 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [compojure "1.1.5"]
                  [ring/ring-servlet "1.2.0"]
+                 [hiccup "1.0.4"]
                  [org.clojure/tools.logging "0.2.3"]
                  ;; [migae/migae-env "0.1.0-SNAPSHOT"]
                  [migae/migae-blobstore "0.1.0-SNAPSHOT"]
