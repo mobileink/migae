@@ -1,7 +1,7 @@
 (ns migae-test.user-servlet
     (:gen-class :extends javax.servlet.http.HttpServlet)
     (:require [migae-test.user-impl :as impl]
-            [ring.util.servlet :as ring]))
+              [ring.util.servlet :as ring]))
 
 (defn -service
   [this rqst resp]
