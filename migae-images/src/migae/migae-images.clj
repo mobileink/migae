@@ -1,4 +1,4 @@
-(ns migae.service.migae-images
+(ns migae.migae-images
   (:import [com.google.appengine.api.images ImagesService ImagesServiceFactory Image
             OutputSettings ImagesService$OutputEncoding Composite$Anchor]
            com.google.appengine.api.blobstore.BlobKey))

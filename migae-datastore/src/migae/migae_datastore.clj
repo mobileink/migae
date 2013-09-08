@@ -32,18 +32,77 @@
     (reset! *datastore-service* (DatastoreServiceFactory/getDatastoreService)))
   @*datastore-service*)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  EntityMap - design goal is to have DS entities behave just like
+;;  ordinary Clojure maps.  E.g. for ent.getProperty("foo") we want to
+;;  write (ent :foo); instead of ent.setProperty("foo", val) we want
+;;  either (assoc ent :foo val), (merge ent :foo val), dissoc, etc.
+;;
+;;  One strategy: use ordinary clj maps with key in metadata, then
+;;  define funcs to convert to Entities at save time.  In this case
+;;  the map is pure clojure, and "glue" functions talk to gae/ds.
+;;  This would require something like ds/getEntity, ds/setEntity.  It
+;;  would also require conversion of the entire Entity each time, all
+;;  at once.  I.e. getting an entity would require gae/ds code to
+;;  fetch the entity, then iterate over all its properties in order to
+;;  create the corresponding map.  This seems both inefficient and
+;;  error prone.  We might be interested in a single property of an
+;;  entity that contains dozens of them - translating all of them
+;;  would be a waste.
+;;
+;;  Strategy two: deftype a class with support for common map funcs so
+;;  it will behave more or less like a map.  In this case the data
+;;  struct itself wraps gae/ds functionality.  Access to actual data
+;;  would be on-demand (JIT) - we don't convert until we have an
+;;  actual demand.
+;;
+;;  SEE http://david-mcneil.com/post/16535755677/clojure-custom-map
+;;
+;;  deftype "dynamically generates compiled bytecode for a named class
+;;  with a set of given fields, and, optionally, methods for one or
+;;  more protocols and/or interfaces. They are suitable for dynamic
+;;  and interactive development, need not be AOT compiled, and can be
+;;  re-evaluated in the course of a single session.  So we use deftype
+;;  with a single data field (holding a map) and the protocols needed
+;;  to support a map-like interface.
+;;
+;;  EntityMap: implements protocols/interfaces to make it behave like
+;;  a clojure map:
+;;   clojure.lang.IPersistentMap
+;;   java.lang.Iterable
+;;   clojure.lang.Associative
+;;   clojure.lang.IPersistentCollection
+;;   clojure.lang.Seqable
+;;   clojure.lang.ILookup
+;;
+;;  The problem is that there doesn't seem to be a way to support
+;;  metadata, which we need for the key.  Also the doc warns sternly
+;;  against mutable fields.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; SEE http://david-mcneil.com/post/16535755677/clojure-custom-map
-
-(def default-contents {:species "human"
-                       :status :alive})
+(def default-contents {:kindkind :kind
+                       :status :default})
 ;; whatever contents are provided at construction time will be
 ;; augmented with the default values
 (defn augment-contents [contents]
   (merge default-contents contents))
 
 (deftype EntityMap [contents]
+  ;; migae.migae-datastore.EntityMap
+  ;; (EntityMap [this content])
+
+  java.lang.Iterable
+  (iterator [this]
+    (.iterator (augment-contents contents)))
+
+  ;; clojure.lang.IMeta
+  ;; (meta [_]
+  ;;   )
+  ;; clojure.lang.IObj
+  ;; (meta [this] (meta m))
+  ;; (withMeta [this md] (EntityMap. (with-meta m md)))
+
   clojure.lang.IPersistentMap
   (assoc [_ k v]
     ;; TODO: use .getProperty (memoize result?)
@@ -52,14 +111,6 @@
     (EntityMap. (.assocEx contents k v)))
   (without [_ k]
     (EntityMap. (.without contents k)))
-
-  ;; clojure.lang.IObj
-  ;; (withMeta [meta]
-  ;;   (EntityMap. (.withMeta meta)))
-
-  java.lang.Iterable
-  (iterator [this]
-    (.iterator (augment-contents contents)))
 
   clojure.lang.Associative
   (containsKey [_ k]
@@ -89,6 +140,9 @@
     (.valAt (augment-contents contents) k not-found)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; An alternative: use defProtocol
+
 (defn dump-entity [theEntity]
   (do
     (prn "****************")
@@ -156,11 +210,11 @@
 ;; :migae.migae-datastore/Entity clojo?
 
 (defn- make-entity
-  ;; "make-entity wraps an Entity in a function.  It memoizes
+  ;; make-entity wraps an Entity in a function.  It memoizes
   ;; metadata (key, kind, id, name, etc.)  as a 'keymap' for use as
   ;; clojure metadata; since this data is immutable, there is no reason
   ;; not to memoize it.  (TODO: see about using deftype for Entities;
-  ;; prob. is metadata)"
+  ;; problem is metadata)
   [theEntity]
   (do ;;(prn "making entity " theEntity)
       (let [theKey (.getKey theEntity)]
@@ -186,6 +240,8 @@
           ;; funcs in our namespace
           (if (nil? kw)
             (let [props (.getProperties theEntity)]
+              ;; efficiency?  this constructs map of all props
+              ;; every time
               (into {} (map (fn [item]
                               {(keyword (.getKey item))
                                (.getValue item)}) props)))
@@ -220,6 +276,10 @@
         (do (prn "FOUND")
             (make-entity theEntity))
         (do (prn "NOT FOUND")
+            ;; TODO: make new only if body non-empty
+            ;; otherwise return NOTFOUND
+            ;; (but what if user wants to create empty entity?)
+            ;; answer: use a metadatum to indicate what to do
             (let [theEntity (Entity. theKey)]
               (do (.put (get-datastore-service) theEntity)
                   (make-entity theEntity)))))))

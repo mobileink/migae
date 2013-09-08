@@ -7,11 +7,14 @@
             LocalMailServiceTestConfig
             LocalDatastoreServiceTestConfig
             LocalUserServiceTestConfig]
-;           [migae.migae-datastore EntityMap]
+           [migae.migae_datastore EntityMap] ;; temp
            [com.google.apphosting.api ApiProxy])
+  (:require [clojure.test :refer :all]
+            [migae.migae-datastore :as ds]))
+;            [ring-zombie.core :as zombie]))
 ;  (:require [migae.migae-datastore.EntityMap])
-  (:use clojure.test
-        [migae.migae-datastore :as ds]))
+  ;; (:use clojure.test
+  ;;       [migae.migae-datastore :as ds]))
 
 ;; (defn datastore [& {:keys [storage? store-delay-ms
 ;;                            max-txn-lifetime-ms max-query-lifetime-ms
@@ -56,7 +59,7 @@
     (is (= com.google.appengine.api.datastore.DatastoreServiceImpl
            (class (ds/get-datastore-service))))
     (is (= com.google.appengine.api.datastore.DatastoreServiceImpl
-           (class @*datastore-service*)))))
+           (class @ds/*datastore-service*)))))
 
 (deftest dump-ent
   (testing "dump entity"
@@ -111,6 +114,7 @@
       (is (not= newEntity fetched-by-map))
       (is (not= newEntity fetched-by-key))
       (is (not= fetched-by-key fetched-by-map))
+      ;; clj map emulation
       (is (= (:key (meta newEntity)) (:key (meta fetched-by-key))))
       (is (= (:key (meta newEntity)) (:key (meta fetched-by-map))))
       (is (= (:key (meta fetched-by-key)) (:key (meta fetched-by-map))))
@@ -277,7 +281,7 @@
                         {:fname "Antonio", :lname "Salieri"})
           fetched (ds/ds {:kind :Employee, :name "asalieri"}) ;; keymap
           ;; fetched-flds (fetched :theEntity)]
-]
+          ]
       ;; (prn (str "new key: " ((ds/meta? theEntity) :key)))
       ;; (prn (str "new entity: " theEntity))
       ;; (prn (str "new entitymap: " (doall fetched)))
@@ -291,6 +295,63 @@
              ((meta fetched) :kind)))
       ;; (is (= (:theEntity theEntity)
       ;;        (:theEntity fetched))))))
+      )))
+
+(deftest ^:temp field-access
+  (testing "field access by key"
+    (let [theEntity (ds/Entities
+                        ^{:kind :Employee, :name "asalieri"}
+                        {:fname "Antonio", :lname "Salieri"})]
+      ;; (prn (str "new key: " ((ds/meta? theEntity) :key)))
+      ;; (prn (str "new entity: " theEntity))
+      ;; (prn (str "new entitymap: " (doall fetched)))
+
+      (is (= (theEntity :fname)
+             "Antonio")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(deftest ^:map map-test-1
+  (testing "test map emulation"
+    (let [foo "foo" ;; (augment-contents {:a :b})
+          bar (ds/EntityMap. {:kind :Person}) ;; temp
+          theEntity (ds/EntityMap. ^{:kind :Employee, :name "asalieri"} ;; temp
+                                   {:fname "Antonio", :lname "Salieri"})]
+      (prn theEntity)
+      (prn (meta theEntity))
+      (prn (format "map? %s" (map? theEntity)))
+      (prn (str ":kindkind " (:kindkind theEntity)))
+      ;; (prn (str "new entity: " theEntity))
+      ;; (prn (str "new entitymap: " (doall fetched)))
+
+      (is (= (map? theEntity) true))
+      ;; predefined default fields:
+      (is (= (:kindkind theEntity) :kind))
+      (is (= (:status theEntity) :default))
+      ;; app fields:
+      (is (= (:kind (meta theEntity)) ":Employee"))
+      (is (= (:name (meta theEntity)) "asalieri"))
+      (is (= (:fname theEntity) "Antonio"))
+      (is (= (:lname theEntity) "Salieri"))
+      )))
+
+(deftest ^:maps map-test-2
+  (testing "test map emulation"
+    (let [theEntity (ds/Entities
+                        ^{:kind :Employee, :name "asalieri"}
+                        {:fname "Antonio", :lname "Salieri"})]
+      (prn (format "map? %s" (map? theEntity)))
+      (prn (str ":kindkind " (theEntity :kindkind)))
+      ;; (prn (str "new entity: " theEntity))
+      ;; (prn (str "new entitymap: " (doall fetched)))
+
+      (is (= (map? theEntity) true))
+      ;; predefined default fields:
+      (is (= (theEntity :kindkind) :kind))
+      (is (= (theEntity :status) :default))
+      ;; app fields:
+      (is (= (theEntity :name) "asalieri"))
+      (is (= (theEntity :fname) "Antonio"))
+      (is (= (theEntity :lname) "Salieri"))
       )))
 
 ;; TODO:  make ds/Keys work with std EntityMap (i.e. keymap metadata)
