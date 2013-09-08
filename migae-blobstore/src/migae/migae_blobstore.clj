@@ -1,6 +1,6 @@
-(ns migae.service.migae-blobstore
-  (:require [migae.service.migae-datastore :as ds]
-            [migae.service.migae-urlfetch :as url])
+(ns migae.migae-blobstore
+  (:require ; [migae.migae-datastore :as ds]
+            [migae.migae-urlfetch :as url])
   (:import [com.google.appengine.api.blobstore ByteRange BlobKey
             BlobstoreService BlobstoreServiceFactory]
            [javax.servlet.http HttpServletRequest HttpServletResponse]))
@@ -19,9 +19,14 @@
 (defn upload-url [success-path]
   (.createUploadUrl (get-blobstore-service) success-path))
 
+;; from aem datastore impl
+(defn as-blob-key [x]
+  (if (instance? BlobKey x)
+      x
+      (BlobKey. x)))
 
 (defn delete! [& blobs]
-  (let [blobs (map ds/as-blob-key blobs)]
+  (let [blobs (map as-blob-key blobs)]
     (.delete (get-blobstore-service) (into-array blobs))))
 
 
@@ -35,9 +40,9 @@
 
 (defn- serve-helper
   ([blob-key, ^:HttpServletResponse response]
-     (.serve (get-blobstore-service) (ds/as-blob-key blob-key) response))
+     (.serve (get-blobstore-service) (as-blob-key blob-key) response))
   ([blob-key, start, end, ^:HttpServletResponse response]
-     (.serve (get-blobstore-service) (ds/as-blob-key blob-key) (ByteRange. start end) response)))
+     (.serve (get-blobstore-service) (as-blob-key blob-key) (ByteRange. start end) response)))
 
 
 (defn serve [request blob-key]
