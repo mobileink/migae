@@ -9,9 +9,9 @@
           :id "migae-test"
           ;; GAE version ID
           ;; using '-' prefix on version nbr forces user to customize
-          :version  {:dev "-0-1-0"
-                     :test "-0-1-0"
-                     :prod "-0-1-0"}
+          :version  {:dev "0-1-0"
+                     :test "0-1-1"
+                     :prod "1-0-0"}
           :filters [{:filter "reload_filter"
                      :ns "migae-test.reload-filter"
                      :class "migae_test.reload_filter"}]
