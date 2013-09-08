@@ -1,6 +1,5 @@
 (ns migae.service.migae-blobstore
-  (:require [migae.migae-kernel :as core]
-            [migae.service.migae-datastore :as ds]
+  (:require [migae.service.migae-datastore :as ds]
             [migae.service.migae-urlfetch :as url])
   (:import [com.google.appengine.api.blobstore ByteRange BlobKey
             BlobstoreService BlobstoreServiceFactory]
