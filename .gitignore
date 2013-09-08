@@ -3,4 +3,6 @@ pom.xml
 lib/
 classes/
 target/
+war/
+misc/
 .lein-deps-sum
