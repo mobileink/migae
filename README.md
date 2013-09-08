@@ -1,5 +1,7 @@
 # migae
 
+*CAVEAT* This doc is outdated.  Read the source, Luke.
+
 ## Status
 
 This is derived from appengine-magic.  It's basically a reorganization
