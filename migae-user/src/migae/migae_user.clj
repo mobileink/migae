@@ -28,6 +28,11 @@
                     :or {destination "/"}}]
   (.createLoginURL (get-user-service) destination))
 
+(defn login-federated [& {:keys [destination fedIdentity]
+                          :or {destination "/"}}]
+  (.createLoginURL (get-user-service) destination
+                   nil fedIdentity nil))
+
 
 (defn logout-url [& {:keys [destination]
                      :or {destination "/"}}]

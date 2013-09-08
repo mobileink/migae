@@ -69,7 +69,7 @@
                       :class "migae_test.user_servlet",
                       :filters [{:filter "reload_filter"}],
                       :services [{:service "user" :url-pattern  "/user/*"}
-                                 {:service "login" :url-pattern  "/_ah/login*"}]}
+                                 {:service "login" :url-pattern  "/_ah/*"}]}
                      ]
           :war "war"
           :display-name "migae-test"
