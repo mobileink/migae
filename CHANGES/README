@@ -1,3 +1,5 @@
+## CAVEAT: outdated.  Read the source, Duke!
+
 Removed:
 
 install-artifacts.sh - no longer needed with leiningen 2
