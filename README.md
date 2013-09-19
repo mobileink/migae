@@ -51,13 +51,13 @@ them to make available on your local system.
 
   2  `$ cd <appname>`
 
-  3  `$ lein migae config`  - instantiate templates from <appname>/etc
+  3  `$ lein migae config`  - instantiate templates from <appname>\/etc
 
-  4. `$ lein migae libdir`   - copy required jars to war/WEB-INF/lib
+  4 `$ lein migae libdir`   - copy required jars to war/WEB-INF/lib
 
-  5. `$ lein compile`
+  5 `$ lein compile`
 
-  6. `$ /path/to/sdk/bin/dev_appserver.sh war`
+  6 `$ /path/to/sdk/bin/dev_appserver.sh war`
 
 ## Developing and Testing
 
