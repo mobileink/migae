@@ -51,7 +51,7 @@ them to make available on your local system.
 
   2  `$ cd <appname>`
 
-  3  `$ lein migae config`  - instantiate templates from <appname>\/etc
+  3  `$ lein migae config`  - instantiate templates from <appname>/etc
 
   4 `$ lein migae libdir`   - copy required jars to war/WEB-INF/lib
 
