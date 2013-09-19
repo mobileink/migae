@@ -8,16 +8,18 @@ This project started life as a fork from appengine-magic, but it has
 changed so radically that I started over.  It does use code from
 appengine-magic, but conceptually it is a completely different
 creature.  In particular, it is modularized (each GAE service is
-separately packaged), and it does not use the embedded Jetty server
-for testing, as appengine-magic does.  Instead it uses a hack that
-gets you quasi-repl interactivity using the Google dev server.
+separately packaged), supports multiple servlets and filters, and
+does not use the embedded Jetty server for testing, as appengine-magic
+does.  Instead it uses a hack that gets you quasi-repl interactivity
+using the Google dev server.
 
 Most of the services implementation is taken directly from
 appengine-magic, but some is original (e.g. datastore).  It is not
 finished, so don't use it for any serious work.  But it seems to work
 well enough if you want to explore or lend a hand.
 
-_*This documentation is currently unstable and changes frequently.*_
+_*This documentation is reasonably accurate as of Sept 19 2013, but is
+unstable and subject to frequent change.*_
 
 ## Structure
 
