@@ -1,6 +1,6 @@
 # migae
 
-*CAVEAT* This doc is outdated.  Read the source, Luke.
+Resources for implementing GAE webapps using Clojure.
 
 ## Status
 
