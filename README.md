@@ -26,9 +26,9 @@ unstable and subject to frequent change.*_
 The project actually includes:
 
  * migae - collection of libraries wrapping GAE API, one per GAE service
- * migae-template - a leiningent template
- * lein-migae - a leiningen plugin
- * migae-examples - some examples of how to do servlet programming with or without GAE
+ * [migae-template](https://github.com/greynolds/migae-template) - a leiningent template
+ * [lein-migae](https://github.com/greynolds/lein-migae) - a leiningen plugin
+ * [migae-examples](https://github.com/greynolds/migae-examples) - some examples of how to do servlet programming with or without GAE
 
 ## Libraries
 
