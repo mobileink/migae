@@ -22,15 +22,20 @@
             ShortBlob
             Text
             Link]
-           [com.google.appengine.api.blobstore BlobKey]))
+           [com.google.appengine.api.blobstore BlobKey])
+  (:require [migae.migae-datastore.service :as dss]
+            [migae.migae-datastore.key :as dskey]
+            [migae.migae-datastore.query :as dsqry]
+            [migae.infix :as infix]
+            [clojure.tools.logging :as log :only [trace debug info]]))
   ;; (:use migae.migae-core.utils))
 
-(defonce ^{:dynamic true} *datastore-service* (atom nil))
-(defn get-datastore-service []
-  (when (nil? @*datastore-service*)
-    ;; (do (prn "getting ds service ****************")
-    (reset! *datastore-service* (DatastoreServiceFactory/getDatastoreService)))
-  @*datastore-service*)
+;; (defonce ^{:dynamic true} *datastore-service* (atom nil))
+;; (defn get-datastore-service []
+;;   (when (nil? @*datastore-service*)
+;;     ;; (do (prn "getting ds service ****************")
+;;     (reset! *datastore-service* (DatastoreServiceFactory/getDatastoreService)))
+;;   @*datastore-service*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -42,7 +47,7 @@
 ;;  One strategy: use ordinary clj maps with key in metadata, then
 ;;  define funcs to convert to Entities at save time.  In this case
 ;;  the map is pure clojure, and "glue" functions talk to gae/ds.
-;;  This would require something like ds/getEntity, ds/setEntity.  It
+;;  This would require something like dss/getEntity, dss/setEntity.  It
 ;;  would also require conversion of the entire Entity each time, all
 ;;  at once.  I.e. getting an entity would require gae/ds code to
 ;;  fetch the entity, then iterate over all its properties in order to
@@ -78,15 +83,18 @@
 ;;
 ;;  The problem is that there doesn't seem to be a way to support
 ;;  metadata, which we need for the key.  Also the doc warns sternly
-;;  against mutable fields.
-
+;;  against mutable fields.  But do we really need metadata?  Can't we
+;;  just designate a privileged :key field?  The only drawback is that
+;;  this would become unavailable for use by clients - but so what?
+;;  Call it :_key?
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def default-contents {:kindkind :kind
-                       :status :default})
+(def default-contents {:_kind :DSEntity
+                       :_key nil})
 ;; whatever contents are provided at construction time will be
 ;; augmented with the default values
 (defn augment-contents [contents]
-  (merge default-contents contents))
+  contents)
+;  (merge default-contents contents))
 
 (deftype EntityMap [contents]
   ;; migae.migae-datastore.EntityMap
@@ -139,6 +147,226 @@
   (valAt [_ k not-found]
     (.valAt (augment-contents contents) k not-found)))
 
+
+(defn new-entitymap
+  [raw-contents]
+  {:pre [(let [m (apply hash-map raw-contents)]
+           (:_kind m))]}
+  ;; ;; :_kind required
+  (let [m (apply hash-map raw-contents)
+        {k :_kind n :_name i :_id} m]
+    (if (not k)
+      (throw (Throwable. "missing :_kind"))
+      (if (and (not= (type k) java.lang.String)
+               (not= (type k) clojure.lang.Keyword))
+        (throw (Throwable. ":_kind must be String or Keyword"))
+        (if (and n i) (throw (Throwable. "only one of:_name and :_id allowed"))
+      ;; ;; :_name and :id optional; only one allowed
+      ;; (if (:_name m) ...)
+      ;; (if (:_id m) ...)
+      ;; create entity now?
+      (EntityMap. m))))))
+
+(defn persist
+  [theMap]
+  {:pre [ ]} ;; TODO: validate entitymap
+  (let [{kind :_kind name :_name id :_id} (meta theMap)
+        theEntity (cond
+                   name (Entity. (clojure.core/name kind) name)
+                   id (Entity. (clojure.core/name kind) id)
+                   :else (Entity. (clojure.core/name kind)))]
+    (do
+      (doseq [[k v] theMap]
+        (.setProperty theEntity (clojure.core/name k) v))
+      (let [key (.put (dss/get-datastore-service) theEntity)
+            kw (if (and (not id) (not name)) :_id)
+            v  (if (and (not id) (not name)) (dskey/id key))
+            m (assoc (meta theMap)
+                kw v
+                :_key key
+                :_entity theEntity)]
+      (with-meta theMap m)))))
+
+;; TODO:  support tabular input, each row one entity
+(defn persist-list
+  [kind theList]
+  ;; (log/trace "persist kind" kind)
+  ;; (log/trace "persist list:" theList)
+  (doseq [item theList]
+    (let [theEntity (Entity. (clojure.core/name kind))]
+      (doseq [[k v] item]
+        ;; (log/trace "item" k (type v))
+        (.setProperty theEntity (clojure.core/name k)
+                      (cond
+                       (= (type v) clojure.lang.Keyword) (clojure.core/name v)
+                       :else v)))
+      (.put (dss/get-datastore-service) theEntity)))
+  true)
+
+      ;;       kw (if (and (not id) (not name)) :_id)
+      ;;       v  (if (and (not id) (not name)) (dskey/id key))
+      ;;       m (assoc (meta theMap)
+      ;;           kw v
+      ;;           :_key key
+      ;;           :_ent theEntity)]
+      ;; (with-meta theMap m)))))
+
+;; ################
+;; (defn fetch
+;;   ([^String kind] )
+;;   ([^Key key] (dss/get key))
+;;   ([^String kind ^String name] (let [key ...] (ds/get key)))
+;;   ([^String kind ^Long id] (let [key ...] (ds/get key)))
+
+(defmulti fetch
+  (fn [{key :_key kind :_kind name :_name id :_id :as args}]
+    (cond
+     (= (type args) com.google.appengine.api.datastore.Key) :key
+     key  :keymap
+     name :name
+     id   :id
+     kind :pred
+     :else :bug)))
+
+(defmethod fetch :bug
+ [{key :_key kind :_kind name :_name id :_id :as args}]
+  (log/trace "fetch method :bug, " args))
+
+(defmethod fetch :key
+  [key]
+  {:pre [(= (type key) com.google.appengine.api.datastore.Key)]}
+  (let [ent (.get (dss/get-datastore-service) key)
+        kind (dskey/kind key)
+        name (dskey/name key)
+        id (dskey/id   key)
+        props  (into {} (.getProperties ent))] ;; java.util.Collections$UnmodifiableMap???
+    (with-meta
+      (into {} (for [[k v] props] [(keyword k) v]))
+      {:_kind kind :_name name :_key key :_entity ent})))
+
+(defmethod fetch :keymap
+  [{key :_key}]
+  {:pre [(= (type key) com.google.appengine.api.datastore.Key)]}
+  (let [ent (.get (dss/get-datastore-service) key)
+        kind (dskey/kind key)
+        name (dskey/name key)
+        id (dskey/id   key)
+        props  (into {} (.getProperties ent))] ;; java.util.Collections$UnmodifiableMap???
+    (with-meta
+      (into {} (for [[k v] props] [(keyword k) v]))
+      {:_kind kind :_name name :_key key :_entity ent})))
+
+(defmethod fetch :name
+  ;; {:pre [ ]}
+  [{kind :_kind name :_name}]
+  (let [key (dskey/make kind name)
+        ent (.get (dss/get-datastore-service) key)
+        props  (into {} (.getProperties ent))] ;; java.util.Collections$UnmodifiableMap???
+    (with-meta
+      (into {} (for [[k v] props] [(keyword k) v]))
+      {:_kind kind :_name name :_key key :_entity ent})))
+
+(defmethod fetch :id
+  ;; {:pre [ ]}
+  [{kind :_kind id :_id}]
+  (let [key (dskey/make kind id)
+        ent (.get (dss/get-datastore-service) key)
+        props (into {} (.getProperties ent))] ;; java.util.Collections$UnmodifiableMap???
+    (with-meta
+      (into {} (for [[k v] props] [(keyword k) v]))
+      {:_kind kind :_id id :_key key :_entity ent})))
+
+(defmethod fetch :pred
+  ;; {:pre [ ]}
+  [{kind :_kind :as args}]
+  (let [m (dissoc args :_kind)
+        foo (log/trace "args " m)]
+    ))
+    ;; (dskey/make kind id)
+    ;;     ent (.get (dss/get-datastore-service) key)
+    ;;     props (into {} (.getProperties ent))] ;; java.util.Collections$UnmodifiableMap???
+    ;; (with-meta
+    ;;   (into {} (for [[k v] props] [(keyword k) v]))
+    ;;   {:_kind kind :_id id :_key key :_entity ent})))
+
+(defmulti ptest
+  (fn
+    ([arg1 arg2]
+       (cond
+        ;; :_kind :Person
+        (= arg1 :_kind) (do (log/trace "dispatching on kw " arg2) :kind)
+        ;; :Person '(:sex = :M)
+        (list? arg2) (do (log/trace "dispatching on kind filter "
+                                    (infix/infix-to-prefix arg2)) :kindfilter)
+        :else :bug)
+        )
+    ([kw kind filter]
+       (let [f (infix/infix-to-prefix filter)]
+         (do (println "ptest kw " kind)
+             (println "ptest kw" (type kind))
+             (log/trace "kw filter: " f)
+             (cond
+              ;; :_kind :Person '(:age >= 18)
+              (list? filter) (do (log/trace "dispatching on kw filter "
+                                    (infix/infix-to-prefix filter)) :kwfilter)
+              (map? kw) (do (log/trace "map " kw) :map)
+              (vector? kw) (do (let [a (apply hash-map kw)]
+                                  (log/trace kw) :v))
+              :else :bug
+              ))))
+    ;; ([kw kind & args]
+    ;;    (let [a (apply hash-map kw kind args)
+    ;;          f (:filter a)]
+    ;;      (do (println "ptest a " a)
+    ;;          (println "ptest a" (type a))
+    ;;          (log/trace "filter: " (infix/infix-to-prefix f))
+    ;;          (cond
+    ;;           (map? a) (do (log/trace "map " a) :map)
+    ;;           (vector? a) (do (let [a (apply hash-map a)]
+    ;;                               (log/trace a) :v))
+    ;;           :else :bug
+    ;;           ))))
+    ([{kind :_kind :as args}]
+       (do (println "ptest b" args)
+           (println "ptest b" (type args))
+           (cond
+            ;; check for null kind
+            (keyword? args) (do (log/trace "dispatching on kind " args) :kind)
+            (map? args) (do (log/trace "map " args) :map)
+            (vector? args) (do (let [a (apply hash-map args)]
+                                 (log/trace a) :v))
+            :else :bug
+            )))))
+
+(defmethod ptest :bug
+  [arg & args]
+  (log/trace "ptest bug: " args)
+  (log/trace "ptest bug: " (type args))
+  )
+
+(defmethod ptest :map
+  [arg & args]
+  )
+
+(defmethod ptest :kw
+  [arg1 arg2]
+  )
+
+(defmethod ptest :kind
+  [arg & args]
+  )
+
+(defmethod ptest :kindfilter
+  [kind filter]
+  )
+
+(defmethod ptest :kwfilter
+  [kw kind filter]
+  )
+
+(defmethod ptest :v
+  [arg & args]
+  )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; An alternative: use defProtocol
@@ -153,8 +381,9 @@
     (prn "****************")
     ))
 
+
 (declare Entities)
-(declare make-entity)
+(declare wrap-entity)
 
 (defn entity-from-entitymap
   [theEntityMap]
@@ -200,30 +429,33 @@
                           (clojure.core/name k)
                           (if (number? v) v
                               (clojure.core/name v))))
-          ;; TODO: make-entity s/b resonsible for putting if needed
-          (.put (get-datastore-service) theEntity)
-          (make-entity theEntity)))
+          ;; TODO: wrap-entity s/b resonsible for putting if needed
+          (.put (dss/get-datastore-service) theEntity)
+          (wrap-entity theEntity)))
 
 
 ;; QUESTION: do we want to implement a
 ;; :migae.migae-datastore/Key clojo to go with our
 ;; :migae.migae-datastore/Entity clojo?
 
-(defn- make-entity
-  ;; make-entity wraps an Entity in a function.  It memoizes
-  ;; metadata (key, kind, id, name, etc.)  as a 'keymap' for use as
-  ;; clojure metadata; since this data is immutable, there is no reason
-  ;; not to memoize it.  (TODO: see about using deftype for Entities;
-  ;; problem is metadata)
+(defn- wrap-entity
+  ;; wrap-entity wraps an Entity in a function.  It memoizes metadata
+  ;; (key, kind, id, name, etc.)  as a 'keymap' for use as clojure
+  ;; metadata.  We could implement access to e.g. :kind as logic in
+  ;; the function, but since this data is immutable, there is no
+  ;; reason not to memoize it.  (TODO: see about using deftype for
+  ;; Entities; problem is metadata)
+  ;; BUT: implementing this in the closure amounts to the same thing?
   [theEntity]
   (do ;;(prn "making entity " theEntity)
-      (let [theKey (.getKey theEntity)]
+      (let [theKey (.getKey theEntity)
+            kind (keyword (.getKind theEntity))]
         ;; then construct function
         ^{:entity theEntity
           :parent (.getParent theEntity)
           :type ::Entity ;; :migae.migae-datastore/Entity
           :key (.getKey theEntity)
-          :kind (keyword (.getKind theEntity))
+          :kind kind ; (keyword (.getKind theEntity))
           :namespace (.getNamespace theEntity)
           :name (.getName theKey)
           :id (.getId theKey)
@@ -238,6 +470,7 @@
           ;; etc.
           ;; only way I see to do this as of now is local replacement
           ;; funcs in our namespace
+          ;; (cond (= kw :kind kind) ...
           (if (nil? kw)
             (let [props (.getProperties theEntity)]
               ;; efficiency?  this constructs map of all props
@@ -247,42 +480,44 @@
                                (.getValue item)}) props)))
             (.getProperty theEntity (name kw)))))))
 
+
 (defprotocol GAEDS
   (get-entity-with-fields [keymap])
   ;; (meta? [theEntity])
   (ds [this])
   (Keys [keymap])
   (Entities [e]))
+;;  (merge [theEntity entitymap])) ;; update Entity map
 
 (extend-protocol GAEDS
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   com.google.appengine.api.datastore.Key
   (ds [theKey]
     (do ;; (prn "ds applied to Key" theKey)
-        (let [theEntity (.get (get-datastore-service) theKey)]
+        (let [theEntity (.get (dss/get-datastore-service) theKey)]
           ;; (prn "ds applied to map")
           ;; (prn (str "made key: " theKey))
           ;; (prn (str "fetched entity: " theEntity))
-          (make-entity theEntity))))
+          (wrap-entity theEntity))))
   (Entities [theKey]
     ;; if entity already exists return it as ds/Entity else create it
     (let [theEntity
-          (try (.get (get-datastore-service) theKey)
+          (try (.get (dss/get-datastore-service) theKey)
                (catch EntityNotFoundException e1 ) ;; (prn "NOT FOUND"))
                (catch IllegalArgumentException e2 (prn "ILLEGAL ARG TO GET"))
                (catch DatastoreFailureException e3
                  (prn "DatastoreFailureException")))]
       (if theEntity
         (do (prn "FOUND")
-            (make-entity theEntity))
+            (wrap-entity theEntity))
         (do (prn "NOT FOUND")
             ;; TODO: make new only if body non-empty
             ;; otherwise return NOTFOUND
             ;; (but what if user wants to create empty entity?)
             ;; answer: use a metadatum to indicate what to do
             (let [theEntity (Entity. theKey)]
-              (do (.put (get-datastore-service) theEntity)
-                  (make-entity theEntity)))))))
+              (do (.put (dss/get-datastore-service) theEntity)
+                  (wrap-entity theEntity)))))))
 
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,7 +536,7 @@
         (let [theKey (KeyFactory/createKey
                       (clojure.core/name kind)
                       (if id id name))
-              theEntity (.get (get-datastore-service) theKey)
+              theEntity (.get (dss/get-datastore-service) theKey)
               props (.getProperties theEntity)]
           ;; props = java.util.Collections$UnmodifiableMap
           ;; prop = java.util.Collections
@@ -322,8 +557,8 @@
         (let [theKey (KeyFactory/createKey
                       (clojure.core/name kind)
                       (if id id name))
-              theEntity (.get (get-datastore-service) theKey)]
-          (make-entity theEntity))))
+              theEntity (.get (dss/get-datastore-service) theKey)]
+          (wrap-entity theEntity))))
     (Entities
       [theEntityMap]
       (let [{:keys [kind name id]} (meta theEntityMap)]
@@ -394,9 +629,9 @@
             (.setProperty theEntity
                           (clojure.core/name k)
                           (clojure.core/name v)))
-          ;; TODO: make-entity s/b resonsible for putting if needed
-          (.put (get-datastore-service) theEntity)
-          (make-entity theEntity))))
-          ;; {:theKey (.put (get-datastore-service) theEntity)
+          ;; TODO: wrap-entity s/b resonsible for putting if needed
+          (.put (dss/get-datastore-service) theEntity)
+          (wrap-entity theEntity))))
+          ;; {:theKey (.put (dss/get-datastore-service) theEntity)
           ;;  :theEntity theEntity})))
   ) ;; extend-protocol

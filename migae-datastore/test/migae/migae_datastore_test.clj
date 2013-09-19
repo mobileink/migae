@@ -1,4 +1,5 @@
 (ns migae.migae-datastore-test
+  (:refer-clojure :exclude [name hash])
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
             LocalServiceTestConfig
@@ -9,8 +10,15 @@
             LocalUserServiceTestConfig]
            [migae.migae_datastore EntityMap] ;; temp
            [com.google.apphosting.api ApiProxy])
+  ;; (:use [clj-logging-config.log4j])
   (:require [clojure.test :refer :all]
-            [migae.migae-datastore :as ds]))
+            [migae.infix :as infix]
+            [migae.migae-datastore :as ds]
+            [migae.migae-datastore.service :as dss]
+            [migae.migae-datastore.entity :as dse]
+            [migae.migae-datastore.query  :as dsqry]
+            [migae.migae-datastore.key    :as dskey]
+            [clojure.tools.logging :as log :only [trace debug info]]))
 ;            [ring-zombie.core :as zombie]))
 ;  (:require [migae.migae-datastore.EntityMap])
   ;; (:use clojure.test
@@ -45,337 +53,21 @@
                 (into-array LocalServiceTestConfig
                             [(LocalDatastoreServiceTestConfig.)]))]
     (do (.setUp helper)
-        (ds/get-datastore-service) 
+        (dss/get-datastore-service) 
         (test-fn)
         (.tearDown helper))))
         ;; (ApiProxy/setEnvironmentForCurrentThread environment)
         ;; (ApiProxy/setDelegate delegate))))
 
-;(use-fixtures :once (fn [test-fn] (ds/get-datastore-service) (test-fn)))
-(use-fixtures :once ds-fixture)
+;(use-fixtures :once (fn [test-fn] (dss/get-datastore-service) (test-fn)))
+(use-fixtures :each ds-fixture)
 
 (deftest ^:init ds-init
   (testing "DS init"
     (is (= com.google.appengine.api.datastore.DatastoreServiceImpl
-           (class (ds/get-datastore-service))))
+           (class (dss/get-datastore-service))))
     (is (= com.google.appengine.api.datastore.DatastoreServiceImpl
-           (class @ds/*datastore-service*)))))
-
-(deftest dump-ent
-  (testing "dump entity"
-    (let [newEntity (ds/Entities
-                        ^{:kind :Employee, :name "asalieri"}
-                        {:flda "A", :fldb "B", :fldc 99})]
-          (ds/dump-entity newEntity))))
-
-(deftest ^:fail make-entity-fail-1
-  (testing "newEntity entity with inconsistent args"
-    ;; (ds/get-datastore-service)
-    (let [newEntity (ds/Entities
-                              ^{:kind :K, :id 123 :name "foo"}
-                              {})]
-      ;; expected: violation of precondition: only one of :id and :name allowed
-      (is true))))
-
-(deftest ^:fail make-entity-fail-2
-  (testing "newEntity entity with inconsistent args"
-    ;; (ds/get-datastore-service)
-    (let [newKey (ds/Keys {:kind :Employee, :name "asalieri"})
-          newEntity (ds/Entities
-                              ^{:key newKey :id 123}
-                              {}) ;; empty
-          fetched (ds/ds {:kind :Employee, :name "asalieri"})]
-      (is (= ((meta newEntity) :kind)
-             :Employee))
-      (is (= ((meta newEntity) :key)
-             ((meta fetched) :key)))
-      (is (= (:entity (meta newEntity))
-             (:entity (meta fetched)))))))
-
-(deftest ^:entities make-entity
-;;  (testing "newEntity entity with string id"
-    ;; (ds/get-datastore-service)
-    (let [theKey (ds/Keys {:kind :Employee, :name "asalieri"})
-          e1 (ds/Entities theKey)
-          e2 (ds/Entities ^{:kind :Employee, :name "asalieri"}{})
-          e3 (ds/Entities ^{:kind :Employee, :id 123}{})]
-      (prn "new entity by key: " e1)
-      (prn "new entity by emap with name: " e2)
-      (prn "new entity by emap with id: " e3)
-      ))
-
-(deftest ^:entities make-entity-with-key
-  (testing "newEntity entity with string id"
-    ;; (ds/get-datastore-service)
-    (let [theKey (ds/Keys {:kind :Employee, :name "asalieri"})
-          newEntity (ds/Entities theKey) ;; ^{:key theKey}{})
-          fetched-by-key (ds/Entities theKey)
-          fetched-by-map (ds/Entities ^{:kind :Employee, :name "asalieri"}{})]
-      (is (not= newEntity fetched-by-map))
-      (is (not= newEntity fetched-by-key))
-      (is (not= fetched-by-key fetched-by-map))
-      ;; clj map emulation
-      (is (= (:key (meta newEntity)) (:key (meta fetched-by-key))))
-      (is (= (:key (meta newEntity)) (:key (meta fetched-by-map))))
-      (is (= (:key (meta fetched-by-key)) (:key (meta fetched-by-map))))
-      (is (= (:entity (meta newEntity)) (:entity (meta fetched-by-key))))
-      (is (= (:entity (meta newEntity)) (:entity (meta fetched-by-map))))
-      (is (= (:entity (meta fetched-by-key)) (:entity (meta fetched-by-map))))
-      (is (= (type newEntity) :migae.migae-datastore/Entity))
-      (is (= (type fetched-by-key) :migae.migae-datastore/Entity))
-      (is (= (type fetched-by-map) :migae.migae-datastore/Entity))
-      (is (instance? clojure.lang.IFn newEntity))
-      (is (instance? clojure.lang.IFn fetched-by-key))
-      (is (instance? clojure.lang.IFn fetched-by-map))
-      (is (= (:kind (meta newEntity)) :Employee))
-      (is (= (:kind (meta fetched-by-key)) :Employee))
-      (is (= (:kind (meta fetched-by-map)) :Employee))
-      (is (nil? (:parent (meta newEntity))))
-      (is (nil? (:parent (meta fetched-by-key))))
-      (is (nil? (:parent (meta fetched-by-map))))
-      (is (= (:key (meta newEntity)) (:key (meta fetched-by-key)))))))
-
-(deftest ^:entities make-entity-with-kind
-  (testing "newEntity entity with kind only"
-    ;; (ds/get-datastore-service)
-    (let [e1 (ds/Entities ^{:kind :Employee}{})
-          e2 (ds/Entities ^{:kind :Employee}{})]
-      (is (= (type e1) :migae.migae-datastore/Entity))
-      (is (instance? clojure.lang.IFn e1))
-      (is (= (:kind (meta e1)) :Employee))
-      ;; name-less, id-less entities always assigned unique numeric id
-      (is (not (nil? (:id (meta e1)))))
-      (is (not (nil? (:id (meta e2)))))
-      (is (not= (:id (meta e1)) (:id (meta e2))))
-      (is (nil? (:name (meta e1)))))))
-
-(deftest ^:entities make-entity-with-name
-  (testing "newEntity entity with string id"
-    ;; (ds/get-datastore-service)
-    (let [e1 (ds/Entities ^{:kind :Employee, :name "jones"}{})
-          e2 (ds/Entities ^{:kind :Employee, :name "smith"}{})
-          newEntity (ds/Entities ^{:kind :Employee, :name "asalieri"}{})
-          fetched (ds/Entities ^{:kind :Employee, :name "asalieri"}{})]
-      (is (= (type newEntity) :migae.migae-datastore/Entity))
-      (is (= (type fetched) :migae.migae-datastore/Entity))
-      (is (instance? clojure.lang.IFn newEntity))
-      (is (instance? clojure.lang.IFn fetched))
-      (is (= (:kind (meta newEntity)) :Employee))
-      (is (= (:kind (meta fetched)) :Employee))
-      ;; new id-less entities always get id = 0?
-      (is (= 0 (:id (meta newEntity))))
-      (is (= 0 (:id (meta e1))))
-      (is (= 0 (:id (meta e2))))
-      (is (= (:name (meta newEntity)) "asalieri"))
-      (is (= (:name (meta fetched)) "asalieri"))
-      (is (nil? (:parent (meta newEntity))))
-      (is (nil? (:parent (meta fetched))))
-      (is (= ((meta newEntity) :key) ((meta fetched) :key)))
-      (is (= (:entity (meta newEntity))
-             (:entity (meta fetched)))))))
-
-(deftest ^:entities make-entity-with-id
-  (testing "new entity with numeric id"
-    (let [newEntity (ds/Entities
-                        ^{:kind :Employee, :id 123}
-                        {}) ;; empty
-          fetched (ds/Entities ^{:kind :Employee, :id 123}{})]
-      (is (= (type newEntity) :migae.migae-datastore/Entity))
-      (is (= (type fetched) :migae.migae-datastore/Entity))
-      (is (instance? clojure.lang.IFn newEntity))
-      (is (instance? clojure.lang.IFn fetched))
-      (is (= (:kind (meta newEntity)) :Employee))
-      (is (= (:kind (meta fetched)) :Employee))
-      (is (= (:id (meta newEntity)) 123))
-      (is (= (:id (meta fetched)) 123))
-      (is (nil? (:name (meta newEntity))))
-      (is (nil? (:name (meta fetched))))
-      (is (nil? (:parent (meta newEntity))))
-      (is (nil? (:parent (meta fetched))))
-      (is (= ((meta newEntity) :key) ((meta fetched) :key)))
-      (is (= (:entity (meta newEntity)) (:entity (meta fetched)))))))
-
-(deftest ^:parent make-entity-no-parent
-  (testing "no parent"
-    (let [theEntity (ds/Entities
-                        ^{:kind :Employee, :name "asalieri"}
-                        {:fname "Antonio", :lname "Salieri"})]
-      (is (nil? (:parent (meta theEntity)))))))
-
-(deftest ^:parent make-entity-with-parent-key
-  (testing "entity with parent"
-    (let [theParent (ds/Entities ^{:kind :Person, :name "parent"}{})
-          theChild  (ds/Entities ^{:kind :Person,
-                                      :name "child",
-                                      :parent theParent}{})]
-      (is (= (type theParent) :migae.migae-datastore/Entity))
-      (is (= (type theChild) :migae.migae-datastore/Entity))
-      (is (instance? clojure.lang.IFn theParent))
-      (is (instance? clojure.lang.IFn theChild))
-      (is (= (:kind (meta theParent)) :Person))
-      (is (= (:kind (meta theChild)) :Person))
-      ;; new id-less entities always get id = 0?
-      (is (= 0 (:id (meta theParent))))
-      (is (= 0 (:id (meta theChild))))
-      (is (= (:name (meta theParent)) "parent"))
-      (is (= (:name (meta theChild)) "child"))
-      (is (nil? (:parent (meta theParent))))
-      (is (= (:parent (meta theChild)) (:key (meta theParent)))))))
-
-(deftest ^:parent make-entity-with-parent-keymap
-  (testing "entity with parent"
-    (let [theParent (ds/Entities ^{:kind :Person, :name "parent"}{})
-          theChild  (ds/Entities ^{:kind :Person,
-                                      :name "child",
-                                      :parent ^{:kind :Person
-                                                :name "parent"}{}
-                                      }{})]
-      (is (= (type theParent) :migae.migae-datastore/Entity))
-      (is (= (type theChild) :migae.migae-datastore/Entity))
-      (is (instance? clojure.lang.IFn theParent))
-      (is (instance? clojure.lang.IFn theChild))
-      (is (= (:kind (meta theParent)) :Person))
-      (is (= (:kind (meta theChild)) :Person))
-      ;; new id-less entities always get id = 0?
-      (is (= 0 (:id (meta theParent))))
-      (is (= 0 (:id (meta theChild))))
-      (is (= (:name (meta theParent)) "parent"))
-      (is (= (:name (meta theChild)) "child"))
-      (is (nil? (:parent (meta theParent))))
-      (is (= (:parent (meta theChild)) (:key (meta theParent)))))))
-
-(deftest ^:parent make-entity-with-grandparent-keymap
-  (testing "three-level entity; ancestor path keys need not be
-  instantiated as entities?"
-    (let [;theParent (ds/Entities ^{:kind :Person, :name "parent"}{})
-          theChild  (ds/Entities
-                     ^{:kind :Person, :name "child",
-                       :parent ^{:kind :Person :name "parent"
-                                 :parent ^{:kind :Person :name "gramps"}{}
-                                 }{}
-                       }{})]
-;      (is (= (type theParent) :migae.migae-datastore/Entity))
-;      (is (= (type theParent) :migae.migae-datastore/Entity))
-      (is (= (type theChild) :migae.migae-datastore/Entity))
-;      (is (instance? clojure.lang.IFn theParent))
-      (is (instance? clojure.lang.IFn theChild))
-;      (is (= (:kind (meta theParent)) :Person))
-      (is (= (:kind (meta theChild)) :Person))
-      ;; new id-less entities always get id = 0?
-;      (is (= 0 (:id (meta theParent))))
-      (is (= 0 (:id (meta theChild))))
-;      (is (= (:name (meta theParent)) "parent"))
-      (is (= (:name (meta theChild)) "child"))
-      (prn "key: " (:key (meta theChild)))
-      (prn "parent key: " (:parent (meta theChild)))
-      ;; TODO: better syntax for getting ancestor keys
-      (prn "gramps key: " (:parent (meta (ds/ds (:parent (meta theChild))))))
-;      (is (nil? (:parent (meta theParent))))
-;      (is (= (:parent (meta theChild)) (:key (meta theParent)))))))
-      )))
-
-(deftest ^:fields make-entity-with-fields
-  (testing "theEntity entity with string id"
-    (let [theEntity (ds/Entities
-                        ^{:kind :Employee, :name "asalieri"}
-                        {:fname "Antonio", :lname "Salieri"})
-          fetched (ds/ds {:kind :Employee, :name "asalieri"}) ;; keymap
-          ;; fetched-flds (fetched :theEntity)]
-          ]
-      ;; (prn (str "new key: " ((ds/meta? theEntity) :key)))
-      ;; (prn (str "new entity: " theEntity))
-      ;; (prn (str "new entitymap: " (doall fetched)))
-      (is (not (= theEntity
-                  fetched)))
-      (is (= {:fname "Antonio", :lname "Salieri"}
-             (fetched)))
-      (is (= ((meta theEntity) :key)
-             ((meta fetched) :key)))
-      (is (= ((meta theEntity) :kind)
-             ((meta fetched) :kind)))
-      ;; (is (= (:theEntity theEntity)
-      ;;        (:theEntity fetched))))))
-      )))
-
-(deftest ^:temp field-access
-  (testing "field access by key"
-    (let [theEntity (ds/Entities
-                        ^{:kind :Employee, :name "asalieri"}
-                        {:fname "Antonio", :lname "Salieri"})]
-      ;; (prn (str "new key: " ((ds/meta? theEntity) :key)))
-      ;; (prn (str "new entity: " theEntity))
-      ;; (prn (str "new entitymap: " (doall fetched)))
-
-      (is (= (theEntity :fname)
-             "Antonio")))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(deftest ^:map map-test-1
-  (testing "test map emulation"
-    (let [foo "foo" ;; (augment-contents {:a :b})
-          bar (ds/EntityMap. {:kind :Person}) ;; temp
-          theEntity (ds/EntityMap. ^{:kind :Employee, :name "asalieri"} ;; temp
-                                   {:fname "Antonio", :lname "Salieri"})]
-      (prn theEntity)
-      (prn (meta theEntity))
-      (prn (format "map? %s" (map? theEntity)))
-      (prn (str ":kindkind " (:kindkind theEntity)))
-      ;; (prn (str "new entity: " theEntity))
-      ;; (prn (str "new entitymap: " (doall fetched)))
-
-      (is (= (map? theEntity) true))
-      ;; predefined default fields:
-      (is (= (:kindkind theEntity) :kind))
-      (is (= (:status theEntity) :default))
-      ;; app fields:
-      (is (= (:kind (meta theEntity)) ":Employee"))
-      (is (= (:name (meta theEntity)) "asalieri"))
-      (is (= (:fname theEntity) "Antonio"))
-      (is (= (:lname theEntity) "Salieri"))
-      )))
-
-(deftest ^:maps map-test-2
-  (testing "test map emulation"
-    (let [theEntity (ds/Entities
-                        ^{:kind :Employee, :name "asalieri"}
-                        {:fname "Antonio", :lname "Salieri"})]
-      (prn (format "map? %s" (map? theEntity)))
-      (prn (str ":kindkind " (theEntity :kindkind)))
-      ;; (prn (str "new entity: " theEntity))
-      ;; (prn (str "new entitymap: " (doall fetched)))
-
-      (is (= (map? theEntity) true))
-      ;; predefined default fields:
-      (is (= (theEntity :kindkind) :kind))
-      (is (= (theEntity :status) :default))
-      ;; app fields:
-      (is (= (theEntity :name) "asalieri"))
-      (is (= (theEntity :fname) "Antonio"))
-      (is (= (theEntity :lname) "Salieri"))
-      )))
-
-;; TODO:  make ds/Keys work with std EntityMap (i.e. keymap metadata)
-(deftest ^:keys make-key
-  (testing "make key"
-    (let [theKey (ds/Keys {:kind :Employee, :name "asalieri"})]
-      ;; (is (= (:key (meta theEntity))
-      ;;        theKey))
-      ;; (is (= ((meta theEntity) :key)
-      ;;        theKey))
-
-      )))
-
-;; (deftest ^:keys make-ent-and-key
-;;   (testing "get entity kind"
-;;     (let [theEntity (ds/Entities
-;;                         ^{:kind :Employee, :name "asalieri"}
-;;                         {:fname "Antonio", :lname "Salieri"})
-;;           theKey (ds/Keys {:kind :Employee, :name "asalieri"})]
-;;       (is (= (:key (meta theEntity))
-;;              theKey))
-;;       (is (= ((meta theEntity) :key)
-;;              theKey))
-;;       )))
+           (class @dss/*datastore-service*)))))
 
 (deftest ^:meta metadata-kind
   (testing "get entity kind"
@@ -423,3 +115,370 @@
                         {:fname "Antonio", :lname "Salieri"})]
       (is (not (nil? (:keystring (meta theEntity))))))))
 
+;; ################################################################
+(deftest ^:emap entity-map-1
+  (testing "entitymap deftype"
+    ;;(ds/new-entitymap ...
+    (let [em ^{:_kind :Employee,
+               :_name "asalieri"},
+          {:fname "Antonio",
+           :lname "Salieri"}]
+ ;      (println em)
+      ;; (is (= (type em)
+      ;;        migae.migae_datastore.EntityMap))
+      (is (= (:fname em)
+             "Antonio"))
+      (is (= (:fname (merge em {:fname "Wolfie"})
+             "Wolfie")))
+      )))
+
+(deftest ^:emap entity-map-save
+  (testing "entitymap deftype saving"
+    (let [em ^{:_kind :Employee,
+               :_name "asalieri"} {:fname "Antonio",
+                                   :lname "Salieri"}]
+      (let [e (ds/persist em)]
+        ;; (is (= (type e)
+        ;;        com.google.appengine.api.datastore.Key))
+        (is (= (dskey/id (:_key (meta e)))
+               0))
+        (is (= (dskey/name (:_key (meta e)))
+               "asalieri")))
+      )))
+
+(deftest ^:emap entity-map-update
+  (testing "entitymap deftype update"
+    (let [em ^{:_kind :Employee,
+               :_name "asalieri"},
+          {:fname "Antonio",
+           :lname "Salieri"}]
+      (let [e (ds/persist em)
+            f (ds/fetch {:_kind :Employee :_name "asalieri"})]
+        (println "meta: " (meta f))
+        (println f)
+        (is (= (:fname f)
+               "Antonio"))
+        (is (= (type (:fname f))
+               java.lang.String))
+        (is (= (:lname f)
+               "Salieri"))
+      ))))
+
+;; ################################################################
+(deftest ^:entities entities-1
+  (testing "entities 1"
+    (let [input (ds/persist-list
+                 :Person
+                 [{:name "John" :sex :M :age 20}
+                  {:name "Jane" :sex :F :age 30}
+                  {:name "Joe" :sex :M :age 40}
+                  {:name "Joan" :sex :F :age 50}
+                  {:name "George" :sex :M :age 60}
+                  {:name "Georgine" :sex :F :age 70}])]
+          ;; q (dsqry/entities :kind :Person)
+          ;; q- (log/trace "q: " q)
+          ;; pq (dsqry/prepare q)
+          ;; pq- (log/trace "prepared query: " pq)
+          ;; r (dsqry/run pq)
+          ;; r- (log/trace "run: " r)]
+      (log/trace "entities 1" input)
+      )))
+
+;; ################################################################
+(deftest ^:fetch entity-map-fetch-1
+  (testing "entitymap deftype fetch 1"
+    (let [em ^{:_kind :Employee,
+               :_name "asalieri1"},
+          {:fname "Antonio",
+           :lname "Salieri 1"}]
+      (let [e (ds/persist em)
+            f (ds/fetch {:_kind :Employee :_name "asalieri1"})]
+        (is (= (:_kind (meta f))
+               :Employee))
+        (is (= (:_name (meta f))
+               "asalieri1"))
+        (is (= (:fname f)
+               "Antonio"))
+        (is (= (type (:fname f))
+               java.lang.String))
+        (is (= (:lname f)
+               "Salieri 1"))
+      ))))
+
+(deftest ^:fetch entity-map-fetch-2
+  (testing "entitymap deftype fetch 2"
+    (let [em ^{:_kind :Employee,
+               :_id 99},
+          {:fname "Antonio",
+           :lname "Salieri 2"}]
+      (let [e (ds/persist em)
+            f (ds/fetch {:_kind :Employee :_id 99})]
+        (is (= (:_kind (meta f))
+               :Employee))
+        (is (= (:_id (meta f))
+               99))
+        (is (= (:fname f)
+               "Antonio"))
+        (is (= (type (:fname f))
+               java.lang.String))
+        (is (= (:lname f)
+               "Salieri 2"))
+      ))))
+
+(deftest ^:fetch entity-map-fetch-3
+  (testing "entitymap deftype fetch 3"
+    (let [em ^{:_kind :Employee},
+          {:fname "Antonio",
+           :lname "Salieri 3"}]
+      (let [e (ds/persist em)
+            i (:_id (meta e))
+            f (ds/fetch {:_kind :Employee :_id i})]
+        (is (= (:_kind (meta f))
+               :Employee))
+        (is (= (:_id (meta f))
+               (:_id (meta e))))
+        (is (= (:fname f)
+               "Antonio"))
+        (is (= (type (:fname f))
+               java.lang.String))
+        (is (= (:lname f)
+               "Salieri 3"))
+      ))))
+
+(deftest ^:fetch fetch-4
+  (testing "fetch 4"
+    (let [em ^{:_kind :Employee,
+               :_name "asalieri4"},
+          {:fname "Antonio",
+           :lname "Salieri 4"}]
+      (let [e (ds/persist em)
+            k (dse/key e)]
+            ;; f (ds/fetch k)
+            ;; f (ds/fetch {:_key k})]
+        ;; (println "meta: " (meta f))
+        ;; (println f)
+        (is (= (dse/key (ds/fetch k))
+               k))
+        (is (= (dse/key (ds/fetch {:_key k}))
+               k))
+        (is (= (dse/key (ds/fetch {:_kind :Employee :_name "asalieri4"}))
+               k))
+        (is (= (:fname e)
+               "Antonio"))
+        (is (= (type (:fname e))
+               java.lang.String))
+        (is (= (:lname e)
+               "Salieri 4"))
+      ))))
+
+(deftest ^:pred pred-1a
+  (ds/ptest :Person)
+  (testing "pred 1a"))
+
+(deftest ^:pred pred-1b
+  (ds/ptest :_kind :Person)
+  (testing "pred 1b"))
+
+(deftest ^:pred pred-1c
+  (ds/ptest :Person '(:sex = :M))
+  (testing "pred 1c"))
+
+(deftest ^:pred pred-1d
+  (ds/ptest :_kind :Person '(:sex = :M))
+  (testing "pred 1d"))
+
+;; (deftest ^:pred pred-2
+;;   (ds/ptest {:_kind :Person :sex :F}) ;; i.e. sex = F
+;;   (testing "pred 1"))
+
+(deftest ^:pred pred-3
+;;  (ds/ptest {:_kind :Person :sex :F :a "a" :b "b" :c "c" :d "d" :e "e" :f "f"})
+;;  (ds/ptest :_kind :Person '(:sex = :F && :a = "a" && :b = "b" && :c = "c"))
+  (ds/ptest :_kind :Person '(:sex = :F :and :a = "a" :and :b = "b" :and :c = "c"))
+  (testing "pred 1"))
+
+(deftest ^:fetch fetch-5
+  (testing "fetch 5"
+    (let [input (ds/persist-list
+                 :Person
+                 [{:name "John" :sex :M :age 20}
+                  {:name "Jane" :sex :F :age 30}
+                  {:name "Joe" :sex :M :age 40}
+                  {:name "Joan" :sex :F :age 50}
+                  {:name "George" :sex :M :age 60}
+                  {:name "Georgine" :sex :F :age 70}])
+          es (ds/fetch {:_kind :Person :sex :M})]
+      (log/trace es)
+;          es (ds/count :kind :Person :sex :M)]
+      ;; (is (= (dse/count es) 3)) ;; count set of entities
+       )))
+
+(deftest ^:fetch fetch-6
+  ;; (ds/fetch {:_kind :Person :age < 50})
+  (testing "fetch 6"))
+
+(deftest ^:fetch fetch-7
+  ;; (ds/fetch :_kind :Person :sex :M :and :age < 50)
+  (testing "fetch 7"))
+
+(deftest ^:fetch fetch-8
+  ;; (ds/fetch :_kind :Person :age < 30 :or :age > 50)
+  (testing "fetch 8"))
+
+(deftest ^:fetch fetch-9
+  ;; (ds/fetch :_kind :Person :age >= 18 :and :age <= 64)
+  (testing "fetch 9"))
+
+(deftest ^:fetch fetch-10
+  ;; (ds/fetch :_kind :Person :sex :F :and (:age < 18 :or :age > 64))
+  (testing "fetch 10"))
+
+(deftest ^:fetch fetch-11
+  ;; (ds/fetch :_kind :Person :sex :F :and (:age < 18 :or :age > 64) :and :race :White)
+  (testing "fetch 11"))
+
+
+;; ################################################################
+(deftest ^:keys entity-map-keys-1
+  (testing "entitymap deftype keys 1"
+    (let [em ^{:_kind :Employee, :_name "asalieri"}
+          {:fname "Antonio", :lname "Salieri"}]
+      (let [key (ds/persist em)]
+        (is (= (dskey/id key)
+               0))
+        (is (= (dskey/name key)
+               "asalieri")))
+      )))
+
+(deftest ^:keys entity-map-keys-2
+  (testing "entitymap deftype keys 2"
+    (is (= (type (dskey/make {:_kind :Employee :_name "asalieri"}))
+           com.google.appengine.api.datastore.Key))
+    (is (= (type (dskey/make {:_kind :Employee :_id 99}))
+           com.google.appengine.api.datastore.Key))
+    ))
+
+(deftest ^:keys entity-map-keys-child
+  (testing "entitymap deftype keys child"
+    (let [key (dskey/make {:_kind :Genus :_name "Felis"})
+          child (dskey/child key {:_kind :Genus :_name "Felis"})]
+      (is (= (type child)
+             com.google.appengine.api.datastore.Key))
+      (is (= (dskey/parent child)
+             key))
+      (is (= (dskey/name child)
+             "felis catus"))
+      (println child)
+      )))
+
+(deftest ^:keys entity-map-keys-parent
+  (testing "entitymap deftype keys parent"
+    (let [parent (dskey/make {:_kind :Genus :_name "Felis"})
+          child  (dskey/make {:_parent parent :_kind :Species :_name "felis catus"})]
+      (is (= (type child)
+             com.google.appengine.api.datastore.Key))
+      (is (= (dskey/parent child)
+             parent))
+      (is (= (dskey/name child)
+             "felis catus"))
+      )))
+
+
+;; ################################################################
+(deftest ^:query query-entities-1
+  (testing "query 1"
+    (let [q (dsqry/entities)]
+      (log/trace "query entities 1" q)
+      )))
+
+(deftest ^:query query-entities-2
+  (testing "query 2"
+    (let [q (dsqry/entities :kind :Employee)]
+      (log/trace "query entities 2" q)
+      )))
+
+
+(deftest ^:query query-ancestors-1
+  (testing "query ancestors-1"
+    (let [k (dskey/make "foo" "bar")
+          q (dsqry/ancestors :key k)]
+      (log/trace "query ancestors-1:" q)
+      )))
+
+(deftest ^:query query-ancestors-2
+  (testing "query ancestors-2"
+    (let [q (dsqry/ancestors :kind "foo" :name "bar")]
+      (log/trace "query ancestors-2:" q)
+      )))
+
+(deftest ^:query query-ancestors-3
+  (testing "query ancestors-3"
+    (let [q (dsqry/ancestors :kind "foo" :id 99)]
+      (log/trace "query ancestors-3:" q)
+      )))
+
+(deftest ^:query query-ancestors-3
+  (testing "query ancestors-3"
+    (let [q (dsqry/ancestors :kind "foo" :id 99)]
+      (log/trace "query ancestors-3:" q)
+      )))
+
+(deftest ^:query query-ancestors-4
+  (testing "query ancestors-4"
+    (let [q (dsqry/ancestors :kind :Person :id 99)]
+      (log/trace "query ancestors-3:" q)
+      )))
+
+;; ################################################################
+;;  entity lists
+(deftest ^:elist entity-list-1
+  (testing "entity-list 1"
+    (let [input (ds/persist-list
+                 :Person
+                 [{:name "John" :sex :M :age 20}])
+          q (dsqry/entities :kind :Person)
+          pq (dsqry/prepare q)
+          r (dsqry/run pq)]
+      (is (= (dsqry/count pq) 1))
+      (doseq [entity r]
+        (is (= (dse/prop entity "name") "John"))
+        (is (= (dse/prop entity "sex") "M"))
+        (is (= (dse/prop entity "age") 20)))
+      )))
+
+(deftest ^:elist entity-list-6
+  (testing "entity-list 6"
+    (let [input (ds/persist-list
+                 :Person
+                 [{:name "John" :sex :M :age 20}
+                  {:name "Jane" :sex :F :age 30}
+                  {:name "Joe" :sex :M :age 40}
+                  {:name "Joan" :sex :F :age 50}
+                  {:name "George" :sex :M :age 60}
+                  {:name "Georgine" :sex :F :age 70}])
+          q (dsqry/entities :kind :Person)
+          ;; q- (log/trace "q: " q)
+          pq (dsqry/prepare q)
+          ;; pq- (log/trace "prepared query: " pq)
+          r (dsqry/run pq)]
+          ;; r- (log/trace "run: " r)]
+      (is (= (dsqry/count pq) 6))
+      (doseq [entity r]
+        (log/trace "entity " (dse/key entity)))
+      )))
+
+;; ################################################################
+;;  infix
+
+(deftest ^:infix infix-1
+  (testing "infix 1"
+    (log/trace (infix/$= :sex = :M))
+    (log/trace (infix/$= :age >= 50))
+    (log/trace (infix/$= :age >= 18 && :age <= 65))
+    ;; (is (= (infix/$= m = m)
+    ;;        true))
+    ;; (is (= (infix/$= :age < 50)
+    ;;        true))
+    ;; (is (= (infix/$= m > n)
+    ;;        false))
+    ))
