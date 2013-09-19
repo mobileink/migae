@@ -78,7 +78,9 @@ when you run `$ lein migae config`.
 The upshot of this is that when you edit a file, it gets copied to
 war/WEB-INF/classes, which is on the classpath, so it can be reloaded
 by the clojure runtime.  This, in turn, is controlled by a filter -
-see reload_filter.clj in the sample project.
+see reload_filter.clj in the sample project.  Edit code, save, reload
+webpage.  It's not as fast as the repl, but it's usually just fast
+enough.
 
 #### Servlet Configuration
 
