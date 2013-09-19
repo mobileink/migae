@@ -48,10 +48,15 @@ them to make available on your local system.
 ## Getting Started
 
   1  `$ lein new migae app <appname>:<gae-proj-id> /path/to/sdk`
+
   2  `$ cd <appname>`
+
   3  `$ lein migae config`  - instantiate templates from <appname>/etc
-  4. `$ lein migae libdir   - copy required jars to war/WEB-INF/lib
+
+  4. `$ lein migae libdir`   - copy required jars to war/WEB-INF/lib
+
   5. `$ lein compile`
+
   6. `$ /path/to/sdk/bin/dev_appserver.sh war`
 
 ## Developing and Testing
@@ -82,4 +87,3 @@ Everything is controlled by the project.clj file.  The data in the
 template file etc/web.xml.mustache.  You should never need to edit the
 template file.  To change a servlet name or path, edit the project.clj
 file and rerun `lein migae config`.
-
