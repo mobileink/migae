@@ -53,13 +53,20 @@ them to make available on your local system.
 
   2  `$ cd <appname>`
 
-  3  `$ lein migae config`  - instantiate templates from \<appname\>/etc
+  3 `$ lein migae libdir`   - copy required jars to war/WEB-INF/lib
 
-  4 `$ lein migae libdir`   - copy required jars to war/WEB-INF/lib
+  4  `$ lein migae config`  - instantiate templates from \<appname\>/etc
 
   5 `$ lein compile`
 
   6 `$ /path/to/sdk/bin/dev_appserver.sh war`
+
+_NOTE_: you might need to adjust the version number of the plugin in
+project.clj.  Check clojars.
+
+```
+  :profiles {:dev {:plugins [[lein-migae "0.1.6-SNAPSHOT"]
+```
 
 ## Developing and Testing
 
