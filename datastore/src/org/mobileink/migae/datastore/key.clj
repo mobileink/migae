@@ -1,4 +1,4 @@
-(ns migae.migae-datastore.key
+(ns org.mobileink.migae.datastore.key
   (:refer-clojure :exclude [name hash])
   (:import [com.google.appengine.api.datastore
             KeyFactory

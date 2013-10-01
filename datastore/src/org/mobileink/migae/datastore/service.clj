@@ -1,4 +1,4 @@
-(ns migae.migae-datastore.service
+(ns org.mobileink.migae.datastore.service
   (:refer-clojure :exclude [name hash])
   (:import [com.google.appengine.api.datastore
             DatastoreService

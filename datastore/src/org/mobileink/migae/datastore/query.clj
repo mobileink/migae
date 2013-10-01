@@ -1,4 +1,4 @@
-(ns migae.migae-datastore.query
+(ns org.mobileink.migae.datastore.query
   (:refer-clojure :exclude [ancestors count hash keys name])
   (:import [com.google.appengine.api.datastore
             Entity
@@ -19,12 +19,12 @@
            ;; [org.apache.log4j PatternLayout FileAppender
            ;;  EnhancedPatternLayout])
 ;; [clj-logging-config.log4j])
-  (:require [migae.migae-datastore.service :as dss]
-            [migae.migae-datastore.entity :as dsentity]
-            [migae.migae-datastore.key :as dskey]
+  (:require [org.mobileink.migae.datastore.service :as dss]
+            [org.mobileink.migae.datastore.entity :as dsentity]
+            [org.mobileink.migae.datastore.key :as dskey]
             [clojure.tools.logging :as log :only [trace debug info]]))
 
-;; client:  (:require [migae.migae-datastore.query :as dsqry]...
+;; client:  (:require [org.mobileink.migae.datastore.query :as dsqry]...
 
 ;; keys-only query
 ;;   Query q = new Query("Person").setKeysOnly();

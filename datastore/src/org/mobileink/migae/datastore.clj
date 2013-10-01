@@ -1,4 +1,4 @@
-(ns migae.migae-datastore
+(ns org.mobileink.migae/datastore
   (:import [com.google.appengine.api.datastore
             KeyFactory
             Key
@@ -23,13 +23,13 @@
             Text
             Link]
            [com.google.appengine.api.blobstore BlobKey])
-  (:require [migae.migae-datastore.service :as dss]
-            [migae.migae-datastore.entity :as dse]
-            [migae.migae-datastore.key :as dskey]
-            [migae.migae-datastore.query :as dsqry]
+  (:require [org.mobileink.migae.datastore.service :as dss]
+            [org.mobileink.migae.datastore.entity :as dse]
+            [org.mobileink.migae.datastore.key :as dskey]
+            [org.mobileink.migae.datastore.query :as dsqry]
             [migae.infix :as infix]
             [clojure.tools.logging :as log :only [trace debug info]]))
-  ;; (:use migae.migae-core.utils))
+  ;; (:use org.mobileink.migae.core.utils))
 
 ;; (defonce ^{:dynamic true} *datastore-service* (atom nil))
 ;; (defn get-datastore-service []
@@ -98,7 +98,7 @@
 ;  (merge default-contents contents))
 
 (deftype EntityMap [contents]
-  ;; migae.migae-datastore.EntityMap
+  ;; org.mobileink.migae.datastore.EntityMap
   ;; (EntityMap [this content])
 
   java.lang.Iterable
@@ -433,11 +433,11 @@
         arg3 (if (nil? parent) nil
                  (cond
                   (= (type parent)
-                     :migae.migae-datastore/Key)
+                     :org.mobileink.migae.datastore/Key)
                   ;;no yet
                   nil
                   (= (type parent)
-                     :migae.migae-datastore/Entity)
+                     :org.mobileink.migae.datastore/Entity)
                   (:key (meta parent))
                   :else  ;; type parent = EntityMap
                   (:key (meta (Entities parent)))))
@@ -460,8 +460,8 @@
 
 
 ;; QUESTION: do we want to implement a
-;; :migae.migae-datastore/Key clojo to go with our
-;; :migae.migae-datastore/Entity clojo?
+;; :org.mobileink.migae.datastore/Key clojo to go with our
+;; :org.mobileink.migae.datastore/Entity clojo?
 
 (defn- wrap-entity
   ;; wrap-entity wraps an Entity in a function.  It memoizes metadata
@@ -478,7 +478,7 @@
         ;; then construct function
         ^{:entity theEntity
           :parent (.getParent theEntity)
-          :type ::Entity ;; :migae.migae-datastore/Entity
+          :type ::Entity ;; :org.mobileink.migae.datastore/Entity
           :key (.getKey theEntity)
           :kind kind ; (keyword (.getKind theEntity))
           :namespace (.getNamespace theEntity)
@@ -632,11 +632,11 @@
               arg3 (if (nil? parent) nil
                        (cond
                         (= (type parent)
-                           :migae.migae-datastore/Key)
+                           :org.mobileink.migae.datastore/Key)
                            ;;no yet
                            nil
                         (= (type parent)
-                           :migae.migae-datastore/Entity)
+                           :org.mobileink.migae.datastore/Entity)
                            (:key (meta parent))
                         :else  ;; type parent = EntityMap
                            (:key (meta (Entities parent)))))
