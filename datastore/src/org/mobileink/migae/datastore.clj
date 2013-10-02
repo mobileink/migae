@@ -1,4 +1,4 @@
-(ns org.mobileink.migae/datastore
+(ns org.mobileink.migae.datastore
   (:import [com.google.appengine.api.datastore
             KeyFactory
             Key
@@ -27,7 +27,7 @@
             [org.mobileink.migae.datastore.entity :as dse]
             [org.mobileink.migae.datastore.key :as dskey]
             [org.mobileink.migae.datastore.query :as dsqry]
-            [migae.infix :as infix]
+            [org.mobileink.migae.infix :as infix]
             [clojure.tools.logging :as log :only [trace debug info]]))
   ;; (:use org.mobileink.migae.core.utils))
 

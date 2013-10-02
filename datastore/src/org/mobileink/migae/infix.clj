@@ -27,9 +27,10 @@
 ;; from
 ;; https://github.com/liebke/incanter/tree/master/modules/incanter-core/src/incanter
 
-(ns ^{:doc "Library for converting infix mathematical formula to prefix expressions"
+(ns ^{:doc
+      "Library for converting infix mathematical formula to prefix expressions"
       :author "J. Bester"}
-  migae.infix
+  org.mobileink.migae.infix
   (:refer-clojure :exclude [filter]))
 
 
