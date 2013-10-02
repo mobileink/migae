@@ -1,5 +1,5 @@
-(ns migae.migae-taskqueues
-;  (:require [migae.migae-datastore :as ds])
+(ns org.mobileink.migae.taskqueues
+;  (:require [org.mobileink.migae.datastore :as ds])
   (:import java.util.Date
            [com.google.appengine.api.taskqueue Queue QueueFactory
             TaskOptions$Builder TaskOptions$Method]))

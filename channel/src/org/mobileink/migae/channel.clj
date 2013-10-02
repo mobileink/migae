@@ -1,4 +1,4 @@
-(ns migae.migae-channel
+(ns org.mobileink.migae.channel
   (:refer-clojure :exclude [send])
   (:import [com.google.appengine.api.channel
             ChannelServiceFactory

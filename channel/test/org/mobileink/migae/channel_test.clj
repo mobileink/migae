@@ -1,11 +1,11 @@
-(ns migae.migae-channel-test
+(ns org.mobileink.migae.channel-test
   (:refer-clojure :exclude (contains? get))
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
             LocalServiceTestConfig
             LocalChannelServiceTestConfig])
   (:use clojure.test
-        [migae.migae-channel :as chan]
+        [org.mobileink.migae.channel :as chan]
         [clojure.tools.logging :as log :only [debug info]]))
 
 (defn- channel-fixture
