@@ -1,4 +1,4 @@
-(ns migae.migae-datastore-test
+(ns migae.datastore-test
   (:refer-clojure :exclude [name hash])
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
@@ -8,16 +8,15 @@
             LocalMailServiceTestConfig
             LocalDatastoreServiceTestConfig
             LocalUserServiceTestConfig]
-           [migae.migae_datastore EntityMap] ;; temp
            [com.google.apphosting.api ApiProxy])
   ;; (:use [clj-logging-config.log4j])
   (:require [clojure.test :refer :all]
-            [migae.infix :as infix]
-            [migae.migae-datastore :as ds]
-            [migae.migae-datastore.service :as dss]
-            [migae.migae-datastore.entity :as dse]
-            [migae.migae-datastore.query  :as dsqry]
-            [migae.migae-datastore.key    :as dskey]
+            [org.mobileink.migae.infix :as infix]
+            [org.mobileink.migae.datastore :as ds]
+            [org.mobileink.migae.datastore.service :as dss]
+            [org.mobileink.migae.datastore.entity :as dse]
+            [org.mobileink.migae.datastore.query  :as dsqry]
+            [org.mobileink.migae.datastore.key    :as dskey]
             [clojure.tools.logging :as log :only [trace debug info]]))
 ;            [ring-zombie.core :as zombie]))
 ;  (:require [migae.migae-datastore.EntityMap])
@@ -335,7 +334,7 @@
                "Salieri 4"))
       ))))
 
-(deftest ^:fetch fetch-2
+(deftest ^:fetch fetch-keys-only
   (testing "fetch keys only"
     (let [em1 ^{:_kind :Employee,
                :_name "asalieri5"},
@@ -348,7 +347,11 @@
            :lname "Salieri 6"}
           e2 (ds/persist em2)
           f2 (ds/fetch {:_kind :Employee})]
-      (log/trace "fetched: " f2))))
+      (doseq [e f2]
+        (log/debug "ent: " e)
+        (log/debug "key " (.getKey e))
+       (log/debug "name " (.getName (.getKey e)))))))
+;      (log/debug "keysonly fetch: " f2))))
       ;; (log/trace "fetched: " (dsqry/count f2))
       ;; (log/trace "iter: " (iterator-seq (dsqry/run f2))))))
 
