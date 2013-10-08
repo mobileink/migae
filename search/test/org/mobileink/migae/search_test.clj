@@ -65,7 +65,6 @@
              "some test text max 1 MB"))
       (is (= (.getText (.getOnlyField theDoc "textfld2"))
              "some more test text")))))
-      ;; (log/debug "doc 1: " theDoc))))
 
 (deftest ^:doc search-doc-2
   (testing "search doc 2"
