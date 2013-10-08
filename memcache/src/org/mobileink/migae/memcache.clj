@@ -1,7 +1,5 @@
-(ns migae.migae-memcache
+(ns org.mobileink.migae.memcache
   (:refer-clojure :exclude (contains? get))
-;;  (:use [migae.utils :only [record]])
-  ;; (:require [migae.migae-core.utils :as u])
   (:import [com.google.appengine.api.memcache
             MemcacheService
             MemcacheServiceFactory
@@ -52,11 +50,28 @@
   []
   (.clearAll (get-memcache-service)))
 
+;; mimic clojure.core.cache
+(defn has? [key & {:keys [namespace]}]
+  (.contains (get-memcache-service :namespace namespace) key))
 
+;; deprecate
 (defn contains? [key & {:keys [namespace]}]
   (.contains (get-memcache-service :namespace namespace) key))
 
+;; mimic clojure.core.cache
+(defn evict!
+  "If (sequential? key-or-keys), deletes in batch."
+  [key-or-keys & {:keys [namespace millis-no-readd]}]
+  (let [service (get-memcache-service :namespace namespace)]
+    (if millis-no-readd
+        (if (sequential? key-or-keys)
+            (.deleteAll service key-or-keys millis-no-readd)
+            (.delete service key-or-keys millis-no-readd))
+        (if (sequential? key-or-keys)
+            (.deleteAll service key-or-keys)
+            (.delete service key-or-keys)))))
 
+;; deprecate
 (defn delete!
   "If (sequential? key-or-keys), deletes in batch."
   [key-or-keys & {:keys [namespace millis-no-readd]}]
@@ -85,13 +100,13 @@
   ;;     value-map))
 
 
-(defn- from-entity-cast [value] value)
-  ;; (if (and (= :interactive (gae/gae-environment-type))
-  ;;          (not (nil? (meta value)))
-  ;;          (clojure.core/contains? (meta value) :type))
-  ;;     (let [claimed-class (Class/forName (:type (meta value)))]
-  ;;       (with-meta (u/record claimed-class value) (dissoc (meta value) :type)))
-      ;; value))
+;; (defn- from-entity-cast [value] value)
+;;   (if (and (= :interactive (gae/gae-environment-type))
+;;            (not (nil? (meta value)))
+;;            (clojure.core/contains? (meta value) :type))
+;;       (let [claimed-class (Class/forName (:type (meta value)))]
+;;         (with-meta (u/record claimed-class value) (dissoc (meta value) :type)))
+;;       value))
 
 
 (defn- from-entity-cast-many [value-map]
@@ -100,20 +115,44 @@
       (into {} value-map))
 
 
+
+;; mimic clojure.core.cache
+(defn hit
+ "Is meant to be called if the cache is determined to contain a value
+   associated with `e`")
+
+
+;; mimic clojure.core.cache
+  ;; (lookup [cache e]
+  ;;         [cache e not-found]
+  ;; core.cache docstring:
+  ;; "Retrieve the value associated with `e` if it exists, else `nil` in
+  ;;  the 2-arg case.  Retrieve the value associated with `e` if it exists,
+  ;;  else `not-found` in the 3-arg case."
+(defn lookup
+  "If (sequential? key-or-keys), returns values as a map."
+  [key-or-keys & {:keys [namespace]}]
+  (let [service (get-memcache-service :namespace namespace)]
+    (if (sequential? key-or-keys)
+      (into {} (.getAll service key-or-keys))
+      (.get service key-or-keys))))
+
+;; deprecate
 (defn get
   "If (sequential? key-or-keys), returns values as a map."
   [key-or-keys & {:keys [namespace]}]
   (let [service (get-memcache-service :namespace namespace)]
     (if (sequential? key-or-keys)
-        (from-entity-cast-many (.getAll service key-or-keys))
-        (from-entity-cast (.get service key-or-keys)))))
+        (into {} (.getAll service key-or-keys))
+        (.get service key-or-keys))))
 
 
 (defn put! [key value & {:keys [namespace expiration policy]
                          :or {policy :always}}]
   (let [service (get-memcache-service :namespace namespace)
         policy (*policy-type-map* policy)]
-    (.put service key (to-entity-cast value) expiration policy)))
+    (.put service key expiration policy)))
+    ;; (.put service key (to-entity-cast value) expiration policy)))
 
 
 (defn put-map! [values & {:keys [namespace expiration policy]
