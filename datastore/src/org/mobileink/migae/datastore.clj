@@ -289,12 +289,17 @@
   ;; validate kind, name
   ;; {:pre [ ]}
   [{kind :_kind name :_name}]
-  (let [key (dskey/make {:_kind kind :_name name})
-        ent (.get (dss/get-datastore-service) key)
-        props  (into {} (.getProperties ent))] ;; java.util.Collections$UnmodifiableMap???
-    (with-meta
-      (into {} (for [[k v] props] [(keyword k) v]))
-      {:_kind kind :_name name :_key key :_entity ent})))
+  (let [foo (log/debug (format "fetching kind %s name %s" kind name))
+        key (try (dskey/make {:_kind kind :_name name})
+                 (catch Exception e nil))]
+    (if key
+      (let [ent (.get (dss/get-datastore-service) key)
+            props  (into {} (.getProperties ent))]
+        ;; TODO: if not found, return nil
+        (with-meta
+          (into {} (for [[k v] props] [(keyword k) v]))
+          {:_kind kind :_name name :_key key :_entity ent}))
+      nil)))
 
 (defmethod fetch :kindid
   ;; {:pre [ ]}
@@ -310,8 +315,11 @@
 (defmethod fetch :keysonly
   ;; {:pre [ ]}
   [{kind :_kind :as args}]
-  (let [q (dsqry/keys kind)
-        pq (dsqry/prepare q)]
+  (let [q (dsqry/keys-only kind)
+        foo (log/debug "isKeysOnly? " (.isKeysOnly q))
+        pq (dsqry/prepare q)
+        bar (log/debug "resulting prepq: " pq)
+        c (log/debug "count " (dsqry/count pq))]
     (dsqry/run pq)))
 
 (defmulti ptest

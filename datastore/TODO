@@ -1,3 +1,5 @@
+Fetch logic:  catch not found exceptions in the lib code!
+
 
 Should fetch be in ds or dsqry?  e.g.
 

@@ -28,13 +28,16 @@
 
 ;; keys-only query
 ;;   Query q = new Query("Person").setKeysOnly();
-(defn keys [kind]
-  (.setKeysOnly (Query. (clojure.core/name kind)))
-  )
+(defn keys-only [kind]
+  (let [q  (Query. (clojure.core/name kind))
+        foo (log/debug "keys-only q: " q)
+        qq (.setKeysOnly q)
+        bar (log/debug "after setKeysOnly: " qq)]
+    qq))
 
 ;; ################
 (defn count [preppedqry]
-  (.countEntities preppedqry (FetchOptions$Builder/withDefaults)))
+  (.countEntities preppedqry (FetchOptions$Builder/withDefaults )))
 
 ;; ################
 (defmulti entities
@@ -96,11 +99,9 @@
 
 (defn run
   [prepared-query]
-  (iterator-seq (.asIterator prepared-query)))
-
-(defn count
-  [prepared-query]
-  (.countEntities prepared-query (FetchOptions$Builder/withDefaults)))
+  (do (log/debug "run query " prepared-query)
+      ;; (.asList prepared-query (FetchOptions$Builder/withDefaults))))
+      (iterator-seq (.asIterator prepared-query))))
 
 ;; use ds/fetch????
 ;; (defn fetch
