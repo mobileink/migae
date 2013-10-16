@@ -1,4 +1,4 @@
-# org.mobileink.migae.search
+# org.mobileink.migae.data.docs
 
 
 ## Usage

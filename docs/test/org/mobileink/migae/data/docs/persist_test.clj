@@ -1,4 +1,4 @@
-(ns org.mobileink.migae.data.docs-test
+(ns org.mobileink.migae.data.docs.persist-test
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
             LocalServiceTestConfig
@@ -177,6 +177,8 @@ Usher.")
       (is (= (docs/text theDoc "text_en1") text_en1))
       (is (= (docs/text theDoc "text_en2") text_en2)))))
 
+;; ################################
+;;    MULTIVALS - fields can store multiple vals
 (deftest ^:multivals multivals-1
   (testing "one field, two atoms"
     (let [theDoc (docs/make-doc
@@ -190,80 +192,29 @@ Usher.")
           (is (= (count vals) 2)))))))
 
 (deftest ^:multivals multivals-2
-  (testing "one field, two val types: atom and html"
+  (testing "one field, two html vals"
     (let [theDoc (docs/make-doc
                   ;; ^:my_id
-                  {:field_en1 #{atom_en1
-                                {:html html_en2}}})]
-      (let [vals (docs/vals theDoc :field_en1)]
+                  {:fld #{ {:html html_en1} {:html html_en2}}})]
+      (let [htmls (docs/vals theDoc :fld)]
         (do
-          ;; (doseq [val vals]
-          ;;   (log/debug (format "key: %s val: %s" :field_en1 val)))
-          (is (=  (seq #{atom_en1 (:html {:html html_en2})})
-                  vals))
-          (is (= (count vals) 2)))))))
-
-(deftest ^:multivals multivals-3
-  (testing "one field, two val types: atom and text"
-    (let [textval (apply str (repeat 1000 "x"))
-          ;; x (log/debug (format "1000 xs:%s" textval))
-          theDoc (docs/make-doc
-                  ;; ^:my_id
-                  {:field_en1 #{atom_en1 textval}})]
-      (let [vals (docs/vals theDoc :field_en1)
-            ts   (docs/types theDoc :field_en1)]
-        (do
+          ;; (log/debug (format "theDoc %s" theDoc))
           ;; (doseq [t ts]
           ;;   (log/debug (format "key: %s val: %s" :field_en1 t)))
-          (is (=  (seq #{atom_en1 textval})
-                  vals))
-          (is (= (count vals) 2)))))))
-
-(deftest ^:multivals multivals-4
-  (testing "one field, three types: atom, html, text"
-    (let [textval (apply str (repeat 1000 "x"))
-          ;; x (log/debug (format "1000 xs:%s" textval))
-          theDoc (docs/make-doc
-                  ;; ^:my_id
-                  {:field_en1 #{atom_en1
-                                {:html html_en1}
-                                textval}})]
-      (let [vals (docs/vals theDoc :field_en1)
-            ts   (docs/types theDoc :field_en1)]
-        (do
-          ;; (doseq [t ts]
-          ;;   (log/debug (format "key: %s typ: %s" :field_en1 t)))
-          (is (=  (seq #{atom_en1 textval (:html {:html html_en1})})
-                  vals))
-          (is (= (count vals) 3)))))))
-
-(deftest ^:multivals multivals-6
-  (testing "make doc en 2"
-    (let [theDoc (docs/make-doc
-                  ;; ^:my_id
-                  {:atom_en1 #{atom_en1 atom_en2}
-                   :date1 date1
-                   :html_en1 #{ {:html html_en1} {:html html_en2}}
-                   :nbr1 nbr1
-                   :text_en1 #{text_en1 text_en2}})]
-      (let [atoms (docs/vals theDoc :atom_en1)
-            date (docs/val theDoc :date1)
-            htmls (docs/vals theDoc :html_en1)
-            nbr (docs/val theDoc :nbr1)
-            texts (docs/vals theDoc :text_en1)]
-        (do
-          ;; (doseq [t ts]
-          ;;   (log/debug (format "key: %s val: %s" :field_en1 t)))
-          (is (= (count atoms) 2))
-          (is (= (seq #{atom_en1 atom_en2}) atoms))
-
-          (is (= date date1))
-
           (is (= (count htmls) 2))
           (is (= (seq #{html_en1 html_en2}) htmls))
+          )))))
 
-          (is (= nbr nbr1))
-
+(deftest ^:multivals multivals-3
+  (testing "one field, two text vals"
+    (let [theDoc (docs/make-doc
+                  ;; ^:my_id
+                  {:fld #{ {:text text_en1} {:text text_en2}}})]
+      (let [texts (docs/vals theDoc :fld)]
+        (do
+          ;;(log/debug (format "theDoc %s" theDoc))
+          ;; (doseq [t ts]
+          ;;   (log/debug (format "key: %s val: %s" :field_en1 t)))
           (is (= (count texts) 2))
           (is (= (seq #{text_en1 text_en2}) texts))
           )))))
@@ -311,25 +262,56 @@ Usher.")
 ;;           (is (= (count vals) 3))))))
 
 ;; ################################
-;; (facts "multivals 1"
-;;   (fact "MIDJE: one field, three types: atom, html, text"
-;;     (let [textval (apply str (repeat 1000 "x"))
-;;           ;; x (log/debug (format "1000 xs:%s" textval))
-;;           theDoc (docs/make-doc
-;;                   ;; ^:my_id
-;;                   {:field_en1 #{atom_en1
-;;                                 {:html html_en1}
-;;                                 textval}})]
-;;       (let [vals (docs/vals theDoc :field_en1)
-;;             ts   (docs/types theDoc :field_en1)]
-;;         (do
-;;           (doseq [t ts]
-;;             (log/debug (format "key: %s val: %s" :field_en1 t)))
-;;           ;; (is (=  (seq #{atom_en1 textval (:html {:html html_en1})})
-;;           ;;         vals))
-;;           (seq #{atom_en1 textval (:html {:html html_en1})})
-;;           => vals)))))
-;;           ;; (is (= (count vals) 3)))))))
+;;  MIXEDVALS: fields can store multiple val types
+
+(deftest ^:mixedvals mixedvals-1
+  (testing "one field, two val types: atom and html"
+    (let [theDoc (docs/make-doc
+                  ;; ^:my_id
+                  {:field_en1 #{atom_en1
+                                {:html html_en2}}})]
+      (let [vals (docs/vals theDoc :field_en1)]
+        (do
+          ;; (doseq [val vals]
+          ;;   (log/debug (format "key: %s val: %s" :field_en1 val)))
+          (is (=  (seq #{atom_en1 (:html {:html html_en2})})
+                  vals))
+          (is (= (count vals) 2)))))))
+
+(deftest ^:mixedvals mixedvals-2
+  (testing "one field, two val types: atom and text"
+    (let [textval (apply str (repeat 1000 "x"))
+          ;; x (log/debug (format "1000 xs:%s" textval))
+          theDoc (docs/make-doc
+                  ;; ^:my_id
+                  {:field_en1 #{atom_en1 textval}})]
+      (let [vals (docs/vals theDoc :field_en1)
+            ts   (docs/types theDoc :field_en1)]
+        (do
+          ;; (doseq [t ts]
+          ;;   (log/debug (format "key: %s val: %s" :field_en1 t)))
+          (is (=  (seq #{atom_en1 textval})
+                  vals))
+          (is (= (count vals) 2)))))))
+
+(deftest ^:mixedvals mixedvals-3
+  (testing "one field, three types: atom, html, text"
+    (let [textval (apply str (repeat 1000 "x"))
+          ;; x (log/debug (format "1000 xs:%s" textval))
+          theDoc (docs/make-doc
+                  ;; ^:my_id
+                  {:field_en1 #{atom_en1
+                                {:html html_en1}
+                                textval}})]
+      (let [vals (docs/vals theDoc :field_en1)
+            ts   (docs/types theDoc :field_en1)]
+        (do
+          ;; (doseq [t ts]
+          ;;   (log/debug (format "key: %s typ: %s" :field_en1 t)))
+          (is (=  (seq #{atom_en1 textval (:html {:html html_en1})})
+                  vals))
+          (is (= (count vals) 3)))))))
+
 
 ;; ################################
 ;;     PERSIST  (PUT)
