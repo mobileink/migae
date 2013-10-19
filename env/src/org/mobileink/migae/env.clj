@@ -1,8 +1,8 @@
-(ns migae.migae-env
+(ns org.mobileink.migae.env
   (:import [com.google.apphosting.api ApiProxy]
            [com.google.appengine.api.utils SystemProperty]))
 
-(declare migae-type)
+;;(declare migae-type)
 
 ;; (defn gae-environment-type []
 ;;   (let [env-property (System/getProperty "com.google.appengine.runtime.environment")]

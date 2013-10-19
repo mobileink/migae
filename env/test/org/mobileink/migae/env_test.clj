@@ -1,11 +1,11 @@
-(ns migae.migae-env-test
+(ns org.mobileink.migae.env-test
 ;  (:refer-clojure :exclude (contains? get))
   (:import [com.google.appengine.tools.development.testing
             LocalServiceTestHelper
             LocalServiceTestConfig
             LocalUserServiceTestConfig])
   (:use clojure.test
-        [migae.migae-env :as e]))
+        [org.mobileink.migae.env :as gae]))
   ;; (:import [com.google.appengine.tools.development.testing
   ;;           LocalServiceTestHelper
   ;;           LocalServiceTestConfig])
@@ -37,12 +37,12 @@
 
 (deftest ^:init env-init
   (testing "ENV init"
-    (println (format "email: %s" (e/gaeUserEmail)))
-    (println (format "GAE App ID: %s" (e/gaeAppId)))
-    (println (format "Sys App ID: %s" (e/sysAppId)))
-    (println (format "GAE Version ID: %s" (e/gaeVersionId)))
-    (is (= true (e/gaeUserIsAdmin?)))
-    (is (= true (e/gaeUserLoggedIn?)))
-    (is (= "dev@example.org" (e/gaeUserEmail)))
-    (is (= "migae-env-test" (e/gaeAppId)))
+    (println (format "email: %s" (gae/gaeUserEmail)))
+    (println (format "GAE App ID: %s" (gae/gaeAppId)))
+    (println (format "Sys App ID: %s" (gae/sysAppId)))
+    (println (format "GAE Version ID: %s" (gae/gaeVersionId)))
+    (is (= true (gae/gaeUserIsAdmin?)))
+    (is (= true (gae/gaeUserLoggedIn?)))
+    (is (= "dev@example.org" (gae/gaeUserEmail)))
+    (is (= "migae-env-test" (gae/gaeAppId)))
     ))

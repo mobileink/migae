@@ -1,5 +1,5 @@
-(defproject migae/migae-env "0.1.0-SNAPSHOT"
-  :description "Mobile Ink Google App Engine sdk for Clojure."
+(defproject org.mobileink.migae/env "0.1.0-SNAPSHOT"
+  :description "MobileInk Google App Engine sdk for Clojure."
   :url "http://github.com/greynolds/migae"
   :min-lein-version "2.0.0"
   :aot [#".*"]
