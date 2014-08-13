@@ -1,6 +1,14 @@
+*.jar
 pom.xml
-*jar
+pom.xml.asc
+/bin/
 /lib/
 /classes/
+/releases/
 /target/
+/checkouts/
+.DS_Store
 .lein-deps-sum
+.lein-repl-history
+.lein-plugins/
+.lein-failures

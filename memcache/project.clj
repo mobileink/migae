@@ -1,11 +1,12 @@
 (defproject org.mobileink.migae/memcache "0.1.0-SNAPSHOT"
-  :description "migae - Mobile Ink Google App Engine sdk for Clojure."
-  :url "https://github.com/greynolds/migae"
+  :description "migae - MobileInk Google App Engine sdk for Clojure."
+  :url "https://github.com/mobileink/migae"
   :min-lein-version "2.0.0"
   :aot [#".*"]
   :test-selectors {:stats :stats
                    :put :put
                    :miss :miss
+                   :policy :policy
                    :del :del
                    :incr :incr}
   :dependencies [[org.clojure/clojure "1.5.1"]

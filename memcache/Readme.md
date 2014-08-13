@@ -1,5 +1,6 @@
 ## API
 
+```
 void clearAll()		mc/Cache reinit
 boolean contains?(keyO  (contains? mc/Cache theKey)
 
@@ -22,3 +23,4 @@ void put(key, val)   (assoc mc/Cache key val), (into mc/Cache {key val}), etc
 void putAll
 
 set<T> putIfUntouched
+```
