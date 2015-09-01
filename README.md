@@ -1,3 +1,5 @@
+#  DEPRECATED - moved to [migae](https://github.com/migae)
+
 # migae
 
 Resources for implementing GAE webapps using Clojure.
